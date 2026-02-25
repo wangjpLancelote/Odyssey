@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@odyssey/shared": ["packages/shared/src/index.ts"],
+      "@odyssey/domain": ["packages/domain/src/index.ts"],
+      "@odyssey/engine": ["packages/engine/src/index.ts"],
+      "@odyssey/ai": ["packages/ai/src/index.ts"],
+      "@odyssey/realtime": ["packages/realtime/src/index.ts"],
+      "@odyssey/analytics": ["packages/analytics/src/index.ts"],
+      "@odyssey/scene-dsl": ["packages/scene-dsl/src/index.ts"]
+    }
+  }
+}

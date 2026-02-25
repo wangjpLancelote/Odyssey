@@ -1,0 +1,33 @@
+{
+  "dslVersion": "1",
+  "sceneId": "scene-campus-gate",
+  "cutsceneId": "cutscene-cassell-arrival",
+  "instances": [
+    {
+      "instanceId": "inst-open",
+      "moduleId": "module-cassell-open",
+      "offsetMs": 0,
+      "overrides": []
+    },
+    {
+      "instanceId": "inst-dialogue-day",
+      "moduleId": "module-cassell-dialogue",
+      "offsetMs": 0,
+      "when": { "dayNight": "DAY" },
+      "overrides": []
+    },
+    {
+      "instanceId": "inst-dialogue-night",
+      "moduleId": "module-cassell-dialogue",
+      "offsetMs": 0,
+      "when": { "dayNight": "NIGHT" },
+      "overrides": [
+        {
+          "atomId": "bubble-in",
+          "field": "to.alpha",
+          "value": 0.92
+        }
+      ]
+    }
+  ]
+}

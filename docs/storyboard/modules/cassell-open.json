@@ -1,0 +1,27 @@
+{
+  "moduleId": "module-cassell-open",
+  "motions": [
+    {
+      "id": "cam-open",
+      "kind": "camera",
+      "target": "camera.main",
+      "atMs": 0,
+      "durationMs": 1200,
+      "priority": 1,
+      "ease": "power2.out",
+      "from": { "x": -30, "y": 0, "scale": 1.2, "alpha": 0.4 },
+      "to": { "x": 0, "y": 0, "scale": 1, "alpha": 1 }
+    }
+  ],
+  "audios": [
+    {
+      "id": "bgm-campus",
+      "bus": "bgm",
+      "src": "/audio/bgm-campus.mp3",
+      "volume": 0.55,
+      "fadeInMs": 500,
+      "fadeOutMs": 0,
+      "atMs": 0
+    }
+  ]
+}

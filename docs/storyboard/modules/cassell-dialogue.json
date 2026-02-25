@@ -1,0 +1,38 @@
+{
+  "moduleId": "module-cassell-dialogue",
+  "motions": [
+    {
+      "id": "bubble-in",
+      "kind": "ui",
+      "target": "bubble.nono",
+      "atMs": 500,
+      "durationMs": 600,
+      "priority": 2,
+      "ease": "power2.out",
+      "from": { "alpha": 0, "y": 24 },
+      "to": { "alpha": 1, "y": 0 }
+    },
+    {
+      "id": "speedline",
+      "kind": "effect",
+      "target": "fx.speedline",
+      "atMs": 1200,
+      "durationMs": 350,
+      "priority": 3,
+      "ease": "power2.out",
+      "from": { "alpha": 0 },
+      "to": { "alpha": 0.85 }
+    }
+  ],
+  "audios": [
+    {
+      "id": "sfx-impact",
+      "bus": "sfx",
+      "src": "/audio/sfx-impact.mp3",
+      "volume": 0.8,
+      "fadeInMs": 0,
+      "fadeOutMs": 150,
+      "atMs": 1200
+    }
+  ]
+}

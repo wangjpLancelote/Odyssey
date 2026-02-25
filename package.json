@@ -1,0 +1,16 @@
+{
+  "name": "odyssey",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "bun --cwd apps/web run dev",
+    "dev:worker": "bun --cwd services/worker run dev",
+    "build:web": "bun --cwd apps/web run build",
+    "check": "bun run --cwd apps/web lint && bun test",
+    "test": "bun test"
+  }
+}

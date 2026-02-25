@@ -1,0 +1,342 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionStatus {
+  ACTIVE
+  PAUSED
+  FINISHED
+}
+
+enum DayNight {
+  DAY
+  NIGHT
+}
+
+enum SideQuestState {
+  IDLE
+  ELIGIBLE
+  GENERATING
+  ACTIVE
+  RESOLVED
+  FAILED
+}
+
+enum QueueTaskStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum QueueTaskType {
+  AI_SIDEQUEST_GENERATE
+  ASSET_PREWARM
+  TELEMETRY_AGGREGATE
+}
+
+model User {
+  id        String        @id @default(cuid())
+  email     String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  profile   PlayerProfile?
+}
+
+model PlayerProfile {
+  id          String          @id @default(cuid())
+  userId       String          @unique
+  displayName  String
+  rank         String          @default("B")
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions     GameSession[]
+  bloodline    BloodlineState?
+  wordSpirits  WordSpiritState[]
+  rankProgress RankProgress?
+}
+
+model GameSession {
+  id             String                @id @default(cuid())
+  playerProfileId String
+  chapterId      String
+  currentNodeId  String
+  status         SessionStatus         @default(ACTIVE)
+  dayNight       DayNight              @default(DAY)
+  realmId        String?               // for future async shared world
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  playerProfile  PlayerProfile         @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+  chapter        Chapter               @relation(fields: [chapterId], references: [id])
+  footprints     Footprint[]
+  plotProgress   PlayerPlotProgress[]
+  sideQuests     SideQuestInstance[]
+  queueTasks     EventQueue[]
+  telemetry      TelemetryEvent[]
+
+  @@index([playerProfileId, createdAt])
+  @@index([realmId])
+}
+
+model Chapter {
+  id             String                @id
+  slug           String                @unique
+  title          String
+  introCutsceneId String
+  scenes         Scene[]
+  sessions       GameSession[]
+}
+
+model Scene {
+  id         String         @id
+  chapterId  String
+  title      String
+  order      Int
+  nodes      DialogueNode[]
+  chapter    Chapter        @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([chapterId, order])
+}
+
+model DialogueNode {
+  id         String   @id
+  sceneId    String
+  speaker    String
+  content    String
+  checkpoint Boolean  @default(false)
+  scene      Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  choices    Choice[]
+  outcomes   Outcome[]
+}
+
+model Choice {
+  id          String       @id
+  nodeId       String
+  label        String
+  branchTag    String?
+  nextNodeId   String
+  node         DialogueNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+}
+
+model Outcome {
+  id       String       @id @default(cuid())
+  nodeId    String
+  payload   Json
+  node      DialogueNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+}
+
+model PlotNode {
+  id        String            @id
+  chapterId String
+  chapter   Chapter           @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  outgoing  PlotEdge[]        @relation("plot_outgoing")
+  incoming  PlotEdge[]        @relation("plot_incoming")
+  progress  PlayerPlotProgress[]
+}
+
+model PlotEdge {
+  id          String   @id @default(cuid())
+  fromNodeId   String
+  toNodeId     String
+  choiceId     String
+  createdAt    DateTime @default(now())
+  fromNode     PlotNode @relation("plot_outgoing", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNode       PlotNode @relation("plot_incoming", fields: [toNodeId], references: [id], onDelete: Cascade)
+
+  @@index([fromNodeId])
+  @@index([toNodeId])
+}
+
+model PlayerPlotProgress {
+  id         String      @id @default(cuid())
+  sessionId   String
+  plotNodeId  String
+  visitedAt   DateTime    @default(now())
+  session     GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  plotNode    PlotNode    @relation(fields: [plotNodeId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, visitedAt])
+}
+
+model Footprint {
+  id           String               @id @default(cuid())
+  sessionId     String
+  playerProfileId String
+  mapVisibility FootprintMapVisibility @default(PRIVATE)
+  visitedNodeIds Json
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  session       GameSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  checkpoints   FootprintCheckpoint[]
+
+  @@index([sessionId])
+}
+
+enum FootprintMapVisibility {
+  PRIVATE
+  PARTY
+  PUBLIC
+}
+
+model FootprintCheckpoint {
+  id          String     @id @default(cuid())
+  footprintId  String
+  nodeId       String
+  plotCursor   Int
+  metadata     Json
+  createdAt    DateTime  @default(now())
+  footprint    Footprint @relation(fields: [footprintId], references: [id], onDelete: Cascade)
+
+  @@index([footprintId, createdAt])
+}
+
+model BloodlineState {
+  id               String         @id @default(cuid())
+  playerProfileId   String         @unique
+  purity            Int
+  stability         Int
+  corruption        Int
+  updatedAt         DateTime       @updatedAt
+  playerProfile     PlayerProfile  @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+}
+
+model WordSpiritState {
+  id              String         @id @default(cuid())
+  playerProfileId  String
+  code             String
+  title            String
+  tier             Int
+  cooldownMs       Int
+  cost             Int
+  unlockedAt       DateTime       @default(now())
+  playerProfile    PlayerProfile  @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([playerProfileId, code])
+}
+
+model RankProgress {
+  id              String         @id @default(cuid())
+  playerProfileId  String         @unique
+  rank             String
+  points           Int            @default(0)
+  updatedAt        DateTime       @updatedAt
+  playerProfile    PlayerProfile  @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+}
+
+model SideQuestTemplate {
+  id         String            @id @default(cuid())
+  key        String            @unique
+  title      String
+  machineDef Json
+  createdAt  DateTime          @default(now())
+  instances  SideQuestInstance[]
+}
+
+model SideQuestInstance {
+  id             String         @id @default(cuid())
+  sessionId       String
+  templateId      String?
+  state           SideQuestState
+  startNodeId     String
+  resolutionNodeId String?
+  blocked         Boolean        @default(false)
+  canonRiskFlags  String[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  session         GameSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  template        SideQuestTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([sessionId, state])
+}
+
+model StateMachineState {
+  id            String   @id @default(cuid())
+  sessionId      String
+  currentState   String
+  context        Json
+  updatedAt      DateTime @updatedAt
+
+  @@index([sessionId])
+}
+
+model WorldCanonRule {
+  id          String   @id
+  description String
+  severity    Int
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model CanonViolationLog {
+  id          String   @id @default(cuid())
+  sessionId    String
+  ruleId       String
+  payload      Json
+  createdAt    DateTime @default(now())
+
+  @@index([sessionId, createdAt])
+}
+
+model CutsceneAsset {
+  id          String   @id @default(cuid())
+  sceneId      String
+  kind         String
+  r2Key        String
+  metadata     Json
+  createdAt    DateTime @default(now())
+
+  @@index([sceneId])
+}
+
+model StoryboardFrame {
+  id            String   @id @default(cuid())
+  sceneId        String
+  order          Int
+  cameraScript   Json
+  effectScript   Json
+  dialogueText   String?
+  durationMs     Int
+  createdAt      DateTime @default(now())
+
+  @@unique([sceneId, order])
+}
+
+model EventQueue {
+  id          String          @id @default(cuid())
+  sessionId    String
+  type         QueueTaskType
+  payload      Json
+  dedupeKey    String          @unique
+  attempts     Int             @default(0)
+  status       QueueTaskStatus @default(PENDING)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  session      GameSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+model TuningConfig {
+  id                 String   @id @default(cuid())
+  sideQuestTriggerRate Float
+  canonStrictness      Float
+  animationPace        Float
+  voiceLineMaxLength   Int
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model TelemetryEvent {
+  id         String      @id @default(cuid())
+  sessionId   String
+  name        String
+  attributes  Json
+  occurredAt  DateTime    @default(now())
+  session     GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, occurredAt])
+}
