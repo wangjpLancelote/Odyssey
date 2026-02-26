@@ -3,28 +3,28 @@
     "id": "fd-ch02-node-01",
     "sceneId": "fd-ch02-scene-corridor",
     "speaker": "旁白",
-    "content": "灰烬在走廊尽头凝成了第二道门，火光却更冷。",
+    "content": "灰烬在走廊尽头结成第二道门，火光更冷，却更亮。",
     "checkpoint": true
   },
   {
     "id": "fd-ch02-node-02",
     "sceneId": "fd-ch02-scene-generator",
     "speaker": "诺诺",
-    "content": "你已经走到这里，别把第一章的代价白白丢掉。",
+    "content": "你都走到这里了，别让上一幕的代价白白燃尽。",
     "checkpoint": false
   },
   {
     "id": "fd-ch02-node-03",
     "sceneId": "fd-ch02-scene-generator",
     "speaker": "路明非",
-    "content": "我怕，但我更怕停下来后的一生。",
+    "content": "我不是不怕，我只是更怕一生都停在原地。",
     "checkpoint": false
   },
   {
     "id": "fd-ch02-node-04",
     "sceneId": "fd-ch02-scene-altar",
     "speaker": "旁白",
-    "content": "祭台裂开细长的火纹，第二章的答案仍未完结。",
+    "content": "祭台绽开细长火纹，第二幕在未尽的回响里收束。",
     "checkpoint": true
   }
 ]

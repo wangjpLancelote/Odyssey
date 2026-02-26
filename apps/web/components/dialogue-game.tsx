@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChapterTimeline, CompiledSceneTimeline } from "@odyssey/shared";
 import { NameGate } from "@/components/name-gate";
-import { Button } from "@/components/ui/button";
+import { DragonButton } from "@/components/ui-dragon";
 import { CutsceneCanvas } from "@/components/cutscene-canvas";
+import { GameTopbar } from "@/components/game-topbar";
 import { generateRandomDisplayName } from "@/lib/name-generator";
 import { getStoredDisplayName, setStoredDisplayName } from "@/lib/name-storage";
 import { validateDisplayName } from "@/lib/name-utils";
@@ -55,6 +56,22 @@ type RestorePayload = Omit<SessionPayload, "sessionToken"> & {
   resourceReloadedChapter?: string | null;
 };
 
+type ChapterAssetsPayload = {
+  criticalPreloadAssets: Array<{
+    id: string;
+    kind: "audio" | "video" | "image" | "sprite";
+    url: string;
+  }>;
+  timelineVideoCueMap?: Record<
+    string,
+    {
+      src: string;
+      poster?: string;
+      loop?: boolean;
+    }
+  >;
+};
+
 export function DialogueGame() {
   const [displayName, setDisplayName] = useState("");
   const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
@@ -64,15 +81,25 @@ export function DialogueGame() {
   const [data, setData] = useState<SessionPayload | null>(null);
   const [footprint, setFootprint] = useState<FootprintPayload | null>(null);
   const [chapterTimeline, setChapterTimeline] = useState<ChapterTimeline | null>(null);
-  const [sideQuestInfo, setSideQuestInfo] = useState<string>("-");
+  const [sideQuestInfo, setSideQuestInfo] = useState<string>("尚未唤起支线回响");
   const [muted, setMuted] = useState(false);
-  const [statusText, setStatusText] = useState("尚未开始");
+  const [statusText, setStatusText] = useState("旅程尚未开始");
   const [timeline, setTimeline] = useState<CompiledSceneTimeline | null>(null);
+  const [videoCueMap, setVideoCueMap] = useState<Record<string, { src: string; poster?: string; loop?: boolean }>>(
+    {}
+  );
+  const warmedAssetUrlsRef = useRef(new Set<string>());
 
   const dayNightClass = useMemo(() => {
-    if (!data) return "未知";
-    return data.session.dayNight === "DAY" ? "白天" : "夜晚";
+    if (!data) return "未侦测";
+    return data.session.dayNight === "DAY" ? "白昼" : "夜晚";
   }, [data]);
+
+  const currentChapterTitle = useMemo(() => {
+    if (!data) return "";
+    const matched = chapterTimeline?.chapters.find((chapter) => chapter.id === data.session.chapterId)?.title;
+    return matched ?? data.session.chapterId;
+  }, [data, chapterTimeline]);
 
   function authHeaders(): HeadersInit {
     if (!data?.sessionToken) {
@@ -144,6 +171,58 @@ export function DialogueGame() {
     setTimeline(json.timeline);
   }
 
+  const warmAssetUrls = useCallback((assets: ChapterAssetsPayload["criticalPreloadAssets"]) => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    for (const asset of assets) {
+      if (warmedAssetUrlsRef.current.has(asset.url)) {
+        continue;
+      }
+
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.href = asset.url;
+      link.crossOrigin = "anonymous";
+      link.as = asset.kind === "audio" ? "audio" : asset.kind === "video" ? "video" : "image";
+      document.head.appendChild(link);
+      warmedAssetUrlsRef.current.add(asset.url);
+    }
+  }, []);
+
+  const loadChapterAssets = useCallback(
+    async (storylineId: string, chapterId: string, sessionToken?: string) => {
+      const res = await fetch(
+        `/api/chapters/assets?storylineId=${encodeURIComponent(storylineId)}&chapterId=${encodeURIComponent(chapterId)}`,
+        {
+          headers: sessionToken
+            ? {
+                "x-session-token": sessionToken
+              }
+            : undefined
+        }
+      );
+
+      if (!res.ok) {
+        return;
+      }
+
+      const payload = (await res.json()) as ChapterAssetsPayload;
+      setVideoCueMap(payload.timelineVideoCueMap ?? {});
+      warmAssetUrls(payload.criticalPreloadAssets ?? []);
+    },
+    [warmAssetUrls]
+  );
+
+  useEffect(() => {
+    if (!data) {
+      return;
+    }
+
+    void loadChapterAssets(data.session.storylineId, data.session.chapterId, data.sessionToken);
+  }, [data, loadChapterAssets]);
+
   async function startSession() {
     const validationError = validateDisplayName(displayName);
     if (validationError) {
@@ -168,10 +247,10 @@ export function DialogueGame() {
 
     if (!res.ok) {
       if ("error" in json && json.error === "name_conflict") {
-        setNameError("该名字正在使用中，请换一个名字");
+        setNameError("这个名字已被另一位冒险者点亮，换一个更闪耀的吧。");
         setNameSuggestions(json.suggestions ?? []);
       } else {
-        setNameError("启动失败，请稍后重试");
+        setNameError("启程受阻，请稍后再试。");
       }
       setNameSubmitting(false);
       return;
@@ -181,9 +260,9 @@ export function DialogueGame() {
     setStoredDisplayName(payload.session.displayName);
     setDisplayName(payload.session.displayName);
     setData(payload);
-    setStatusText(`会话已开始：${payload.session.displayName}`);
+    setStatusText(`启程成功，${payload.session.displayName}，前路已亮。 ✨`);
     setFootprint(null);
-    setSideQuestInfo("-");
+    setSideQuestInfo("尚未唤起支线回响");
     await Promise.all([loadTimeline(payload.session.storylineId), loadCutscene(payload)]);
     setNameSubmitting(false);
   }
@@ -197,7 +276,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("会话已失效，请重新进入");
+      setStatusText("你的旅程印记已淡去，请重新启程。");
       return;
     }
 
@@ -214,7 +293,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("会话已失效，请重新进入");
+      setStatusText("你的旅程印记已淡去，请重新启程。");
       return;
     }
 
@@ -223,8 +302,8 @@ export function DialogueGame() {
     setData(next);
     setStatusText(
       response.session.chapterId === data.session.chapterId
-        ? `已选择 ${choiceId}`
-        : `已进入新章节 ${response.session.chapterId}`
+        ? `抉择已刻入命运：${choiceId}。`
+        : `你已跨入新章：${response.session.chapterId}。`
     );
     await loadCutscene(next);
   }
@@ -238,7 +317,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("会话已失效，请重新进入");
+      setStatusText("你的旅程印记已淡去，请重新启程。");
       return;
     }
 
@@ -254,7 +333,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("会话已失效，请重新进入");
+      setStatusText("你的旅程印记已淡去，请重新启程。");
       return;
     }
 
@@ -263,12 +342,12 @@ export function DialogueGame() {
     setData(next);
 
     if (response.resourceReloadedChapter) {
-      setStatusText(`已恢复到 ${checkpointId}，切换到章节 ${response.resourceReloadedChapter}`);
+      setStatusText(`你沿足迹回到 ${checkpointId}，并重返 ${response.resourceReloadedChapter}。`);
       await loadCutscene(next);
       return;
     }
 
-    setStatusText(`已恢复到 ${checkpointId}`);
+    setStatusText(`你沿足迹回到 ${checkpointId}。`);
   }
 
   async function enterNextChapter() {
@@ -276,7 +355,7 @@ export function DialogueGame() {
 
     const current = chapterTimeline.chapters.find((item) => item.id === data.session.chapterId);
     if (!current?.nextId) {
-      setStatusText("当前章节已无下一章");
+      setStatusText("这一幕已抵终点，下一页尚未开启。");
       return;
     }
 
@@ -287,19 +366,19 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("会话已失效，请重新进入");
+      setStatusText("你的旅程印记已淡去，请重新启程。");
       return;
     }
 
     if (!res.ok) {
-      setStatusText("章节切换失败");
+      setStatusText("前往下一幕的通路暂时关闭。");
       return;
     }
 
     const response = (await res.json()) as RestorePayload;
     const next = { ...data, ...response };
     setData(next);
-    setStatusText(`已进入章节 ${response.session.chapterId}`);
+    setStatusText(`你已踏入新幕：${response.session.chapterId}。`);
     await loadCutscene(next);
   }
 
@@ -312,7 +391,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("会话已失效，请重新进入");
+      setStatusText("你的旅程印记已淡去，请重新启程。");
       return;
     }
 
@@ -322,7 +401,9 @@ export function DialogueGame() {
       candidates: string[];
     };
 
-    setSideQuestInfo(`${json.state} / blocked=${json.blocked} / ${json.candidates.join(", ") || "none"}`);
+    setSideQuestInfo(
+      `状态：${json.state}｜受限：${json.blocked ? "是" : "否"}｜回响：${json.candidates.join("、") || "暂无"}`
+    );
   }
 
   async function refreshDayNight() {
@@ -332,7 +413,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("会话已失效，请重新进入");
+      setStatusText("你的旅程印记已淡去，请重新启程。");
       return;
     }
 
@@ -363,6 +444,7 @@ export function DialogueGame() {
 
   return (
     <main>
+      <GameTopbar visible={Boolean(data)} chapterTitle={currentChapterTitle} />
       <div className="shell">
         {!data ? (
           <NameGate
@@ -388,132 +470,143 @@ export function DialogueGame() {
         ) : null}
 
         <div className="row">
-          <h1>龙族对话式剧情游戏 MVP</h1>
+          <h1>火之晨曦：少年冒险篇 ⚔️</h1>
           <span className="tag">{dayNightClass}</span>
         </div>
 
-        <div className="small">主题核心：孤独 / 自我选择 / 宿命选择</div>
+        <div className="small">在孤独与星火之间，做出属于你的那一步。 ✨</div>
 
-        <div className="grid" style={{ marginTop: 16 }}>
+        <div className="grid">
           <section className="card">
             <div className="row">
-              <h2 style={{ margin: 0 }}>剧情推进</h2>
+              <h2 style={{ margin: 0 }}>主线旅程</h2>
               <div className="small">{statusText}</div>
             </div>
 
-            <div className="small" style={{ marginTop: 10 }}>
-              当前姓名：{data?.session.displayName ?? "未进入"}
+            <div className="small" style={{ marginTop: "var(--ody-space-md)" }}>
+              同行者：{data?.session.displayName ?? "尚未入场"}
             </div>
-            <div className="small" style={{ marginTop: 4 }}>
-              当前章节：{data ? `${data.session.storylineId} / ${data.session.chapterId}` : "未进入"}
+            <div className="small" style={{ marginTop: "var(--ody-space-xs)" }}>
+              所在篇章：{data ? `${data.session.storylineId} / ${data.session.chapterId}` : "尚未入场"}
             </div>
 
-            <div className="row" style={{ marginTop: 10 }}>
-              <Button onClick={refreshNode} disabled={!data}>
-                刷新节点
-              </Button>
-              <Button onClick={refreshDayNight} disabled={!data}>
-                刷新昼夜
-              </Button>
-              <Button onClick={enterNextChapter} disabled={!data || !chapterTimeline}>
-                进入下一章
-              </Button>
+            <div className="row" style={{ marginTop: "var(--ody-space-md)" }}>
+              <DragonButton variant="secondary" onClick={refreshNode} disabled={!data}>
+                聆听下一句
+              </DragonButton>
+              <DragonButton variant="secondary" onClick={refreshDayNight} disabled={!data}>
+                校准昼夜
+              </DragonButton>
+              <DragonButton onClick={enterNextChapter} disabled={!data || !chapterTimeline}>
+                迈向下一幕
+              </DragonButton>
             </div>
 
             {data ? (
               <>
-                <hr style={{ margin: "16px 0", borderColor: "#2f3550" }} />
-                <div className="small">节点: {data.node.id}</div>
+                <hr />
+                <div className="small">场景节点：{data.node.id}</div>
                 <p>
                   <strong>{data.node.speaker}：</strong>
                   {data.node.content}
                 </p>
                 <div className="choices">
                   {data.node.choices.map((choice) => (
-                    <Button
+                    <DragonButton
                       key={choice.id}
+                      variant="outline"
                       className="choice-btn"
                       onClick={() => {
                         void commitChoice(choice.id);
                       }}
                     >
                       {choice.label}
-                    </Button>
+                    </DragonButton>
                   ))}
-                  {data.node.choices.length === 0 ? <div className="small">本节点无后续选项。</div> : null}
+                  {data.node.choices.length === 0 ? <div className="small">这一刻尚无可走的分岔路。</div> : null}
                 </div>
               </>
             ) : null}
           </section>
 
           <aside className="card">
-            <h3 style={{ marginTop: 0 }}>系统面板</h3>
+            <h3 style={{ marginTop: 0 }}>旅团仪表盘 🧭</h3>
             <div className="row">
-              <Button
+              <DragonButton
+                variant="secondary"
                 onClick={() => {
                   void loadFootprint();
                 }}
                 disabled={!data}
               >
-                读取足迹
-              </Button>
-              <Button
+                展开足迹
+              </DragonButton>
+              <DragonButton
+                variant="secondary"
                 onClick={() => {
                   void triggerSideQuest();
                 }}
                 disabled={!data}
               >
-                触发支线
-              </Button>
+                唤起支线
+              </DragonButton>
             </div>
 
-            <div style={{ marginTop: 12 }} className="small">
-              AI状态机: {sideQuestInfo}
+            <div className="small" style={{ marginTop: "var(--ody-space-md)" }}>
+              支线回响：{sideQuestInfo}
             </div>
 
-            <hr style={{ margin: "14px 0", borderColor: "#2f3550" }} />
+            <hr />
 
-            <div className="small">章节时间线</div>
-            <div className="small" style={{ marginTop: 8 }}>
+            <div className="small">章节航线</div>
+            <div className="small" style={{ marginTop: "var(--ody-space-sm)" }}>
               {chapterTimeline
                 ? chapterTimeline.chapters
                     .map((item) => `${item.id}${item.enabled ? "" : "(disabled)"}`)
                     .join(" -> ")
-                : "未加载"}
+                : "航线尚未展开"}
             </div>
 
-            <hr style={{ margin: "14px 0", borderColor: "#2f3550" }} />
+            <hr />
 
-            <div className="small">足迹检查点（仅当前会话可见）</div>
-            <div className="choices" style={{ marginTop: 8 }}>
+            <div className="small">足迹锚点（仅你可见）</div>
+            <div className="choices" style={{ marginTop: "var(--ody-space-sm)" }}>
               {footprint?.checkpoints?.map((cp) => (
-                <Button
+                <DragonButton
                   key={cp.checkpointId}
+                  variant="outline"
                   onClick={() => {
                     void restore(cp.checkpointId);
                   }}
                 >
                   {cp.checkpointId} {"->"} {cp.chapterId}:{cp.nodeId}
-                </Button>
+                </DragonButton>
               ))}
-              {!footprint ? <div className="small">尚未加载</div> : null}
+              {!footprint ? <div className="small">尚未读取足迹</div> : null}
             </div>
 
-            <hr style={{ margin: "14px 0", borderColor: "#2f3550" }} />
+            <hr />
             <div className="row">
-              <div className="small">音频开关</div>
-              <Button onClick={() => setMuted((value) => !value)}>{muted ? "取消静音" : "静音"}</Button>
+              <div className="small">音轨</div>
+              <DragonButton variant="ghost" onClick={() => setMuted((value) => !value)}>
+                {muted ? "恢复声息" : "让世界静音"}
+              </DragonButton>
             </div>
           </aside>
         </div>
 
         {timeline ? (
-          <section className="card" style={{ marginTop: 16 }}>
+          <section className="card" style={{ marginTop: "var(--ody-space-lg)" }}>
             <div className="row">
-              <h2 style={{ margin: 0 }}>过场分镜（PixiJS + GSAP + Howler）</h2>
+              <h2 style={{ margin: 0 }}>分镜过场（PixiJS + GSAP + Howler）</h2>
               <div className="small">{timeline.cutsceneId}</div>
             </div>
-            <CutsceneCanvas spec={timeline} muted={muted} onPlayed={() => setStatusText("过场播放完成")} />
+            <CutsceneCanvas
+              spec={timeline}
+              muted={muted}
+              videoCueMap={videoCueMap}
+              onPlayed={() => setStatusText("过场落幕，新的抉择正向你逼近。")}
+            />
           </section>
         ) : null}
       </div>

@@ -1,14 +1,111 @@
 {
-  "images": [
-    "/images/fire-dawn/ch01/bg-street.png",
-    "/images/fire-dawn/ch01/bg-porch.png",
-    "/images/fire-dawn/ch01/bg-belltower.png"
+  "version": "2",
+  "baseKey": "fire-dawn/ch01",
+  "audio": [
+    {
+      "id": "bgm-morning",
+      "bus": "bgm",
+      "path": "audio/bgm/bgm-morning.mp3",
+      "loop": true,
+      "defaultVolume": 0.52,
+      "preloadPriority": "critical"
+    },
+    {
+      "id": "ambient-campus-wind",
+      "bus": "ambient",
+      "path": "audio/ambient/campus-wind-loop.mp3",
+      "loop": true,
+      "defaultVolume": 0.42,
+      "preloadPriority": "high"
+    },
+    {
+      "id": "sfx-impact",
+      "bus": "sfx",
+      "path": "audio/sfx/impact-01.mp3",
+      "loop": false,
+      "defaultVolume": 0.8,
+      "preloadPriority": "high"
+    },
+    {
+      "id": "fd-ch01-node-02-zh",
+      "bus": "voice",
+      "path": "audio/voice/fd-ch01-node-02-zh.mp3",
+      "loop": false,
+      "defaultVolume": 0.9,
+      "preloadPriority": "normal"
+    }
   ],
-  "audios": [
-    "/audio/fire-dawn/ch01/bgm-morning.mp3",
-    "/audio/fire-dawn/ch01/sfx-impact.mp3"
+  "video": [
+    {
+      "id": "fire-dawn-ch01-open",
+      "kind": "cutscene",
+      "path": "video/cutscene/fire-dawn-ch01-open.mp4",
+      "poster": "image/bg-street.png",
+      "preloadPriority": "high"
+    },
+    {
+      "id": "chapter-shift-01",
+      "kind": "transition",
+      "path": "video/transition/chapter-shift-01.webm",
+      "poster": "image/bg-belltower.png",
+      "preloadPriority": "normal"
+    }
   ],
-  "sprites": [
-    "/sprites/fire-dawn/ch01/speedline.png"
-  ]
+  "image": [
+    {
+      "id": "bg-street",
+      "path": "image/bg-street.png",
+      "preloadPriority": "critical"
+    },
+    {
+      "id": "bg-porch",
+      "path": "image/bg-porch.png",
+      "preloadPriority": "high"
+    },
+    {
+      "id": "bg-belltower",
+      "path": "image/bg-belltower.png",
+      "preloadPriority": "normal"
+    }
+  ],
+  "sprite": [
+    {
+      "id": "speedline",
+      "path": "sprite/speedline.png",
+      "preloadPriority": "high"
+    }
+  ],
+  "triggers": {
+    "sceneEnter": [
+      {
+        "type": "scene_enter",
+        "sceneId": "fd-ch01-scene-street",
+        "audioIds": ["bgm-morning", "ambient-campus-wind"],
+        "videoIds": []
+      }
+    ],
+    "nodeEnter": [
+      {
+        "type": "node_enter",
+        "nodeId": "fd-ch01-node-02",
+        "audioIds": ["fd-ch01-node-02-zh"],
+        "videoIds": [],
+        "dedupeOnce": true
+      }
+    ],
+    "timelineCue": [
+      {
+        "type": "timeline_cue",
+        "cueId": "bgm-morning",
+        "audioIds": [],
+        "videoIds": ["fire-dawn-ch01-open"]
+      },
+      {
+        "type": "timeline_cue",
+        "cueId": "sfx-impact",
+        "audioIds": ["sfx-impact"],
+        "videoIds": []
+      }
+    ]
+  }
 }

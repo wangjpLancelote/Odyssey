@@ -48,12 +48,18 @@
 - Data: Supabase(Postgres)
 - Type/Validation: TypeScript, Zod
 
+## 变更记录
+
+- 项目级开发变更：[`changelog.md`](./changelog.md)
+- 世界观文档变更：[`docs/world/change-log.md`](./docs/world/change-log.md)
+
 ## 目录结构
 
 ```txt
 .
 ├─ apps/
 │  └─ web/                      # Next.js 前端与 API Routes
+│     └─ public/assets/         # 章节化音视频资源目录（local/r2 可切换）
 ├─ services/
 │  └─ worker/                   # Bun worker（异步任务骨架）
 ├─ packages/
@@ -64,6 +70,7 @@
 │  ├─ realtime/                 # 实时事件协议
 │  ├─ analytics/                # 埋点事件定义
 │  └─ scene-dsl/                # 分镜 DSL 编译器（模块+时间线）
+├─ changelog.md                 # 项目级变更日志（每次改动同步更新）
 ├─ docs/
 │  ├─ architecture.md           # 架构说明
 │  ├─ narrative-bible.md        # 兼容入口（迁移到 docs/world）
@@ -102,6 +109,10 @@
 ```bash
 SUPABASE_URL="https://<project-ref>.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
+ASSET_MODE="local"                         # local | r2
+R2_PUBLIC_BASE_URL="https://cdn.example.com/odyssey"  # ASSET_MODE=r2 时生效
+NEXT_PUBLIC_ASSET_MODE="local"            # 前端显式切换（可选）
+NEXT_PUBLIC_R2_PUBLIC_BASE_URL="https://cdn.example.com/odyssey" # 前端显式切换（可选）
 ```
 
 可参考模板：`.env.example`。
@@ -158,19 +169,19 @@ bun run build:web     # Next 构建
 4. 对话推进、分支触发、足迹读取/恢复。
 5. 过场由 DSL 编译结果驱动播放。
 
-## 关键 API（MVP）
+接口实现统一位于 `apps/web/app/api` 目录。
 
-- `POST /api/session/start`
-- `GET /api/player/name/suggest`
-- `POST /api/dialogue/advance`
-- `POST /api/choice/commit`
-- `GET /api/footprints/map`
-- `POST /api/footprints/restore`
-- `POST /api/sidequest/trigger`
-- `GET /api/daynight/current`
-- `POST /api/cutscene/play`
-- `GET /api/chapters/timeline`
-- `POST /api/chapters/enter`
+## 音视频资源体系（MVP）
+
+- 目录规范：`apps/web/public/assets/{storyline}/{chapter}/{audio|video|image|sprite}/...`
+- 清单协议：`docs/chapters/{storyline}/{chapter}/resources/manifest.json` 使用 `version: "2"`（Manifest v2）
+- 音频总线：`bgm | ambient | sfx | voice`
+- 触发模型：
+  - `scene_enter`：场景进入常驻轨（BGM/环境音）
+  - `node_enter`：节点触发（voice/sfx）
+  - `timeline_cue`：时间线关键帧触发（sfx/video）
+- 兼容策略：旧路径 `/audio/*`、`/images/*`、`/sprites/*` 由 `AssetResolver` 自动映射到 `/assets/*`
+- 资源模式：本地优先；生产可切 `r2`，不影响本地开发
 
 ## 注意事项
 
@@ -178,4 +189,5 @@ bun run build:web     # Next 构建
 - `sessionToken` 丢失后需重新开局。
 - 名字唯一性按“活跃会话”约束，过期会自动释放。
 - 资源按章节懒加载：默认仅当前章节加载，跨章回溯时才切换加载目标章资源。
+- 资源 URL 统一走 `AssetResolver`：兼容旧路径（`/audio/*`、`/images/*`、`/sprites/*`）并映射到 `/assets/*`。
 - 世界观规则优先于 AI 支线生成；命中冲突时必须执行安全回退。

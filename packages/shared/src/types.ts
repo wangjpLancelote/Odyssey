@@ -96,7 +96,7 @@ export const sideQuestCandidateSchema = z.object({
 });
 export type SideQuestCandidate = z.infer<typeof sideQuestCandidateSchema>;
 
-export const audioBusSchema = z.enum(["master", "bgm", "sfx", "voice"]);
+export const audioBusSchema = z.enum(["master", "bgm", "sfx", "voice", "ambient"]);
 export type AudioBus = z.infer<typeof audioBusSchema>;
 
 export const audioCueSchema = z.object({
@@ -234,11 +234,194 @@ export const chapterCutsceneMetaSchema = z.object({
 });
 export type ChapterCutsceneMeta = z.infer<typeof chapterCutsceneMetaSchema>;
 
-export const chapterResourceManifestSchema = z.object({
+export const chapterAssetPreloadPrioritySchema = z.enum(["critical", "high", "normal", "low"]);
+export type ChapterAssetPreloadPriority = z.infer<typeof chapterAssetPreloadPrioritySchema>;
+
+export const chapterAssetAudioBusSchema = z.enum(["bgm", "sfx", "voice", "ambient"]);
+export type ChapterAssetAudioBus = z.infer<typeof chapterAssetAudioBusSchema>;
+
+export const audioAssetSchema = z.object({
+  id: z.string(),
+  bus: chapterAssetAudioBusSchema,
+  path: z.string(),
+  loop: z.boolean().default(false),
+  defaultVolume: z.number().min(0).max(1).default(1),
+  preloadPriority: chapterAssetPreloadPrioritySchema.default("normal")
+});
+export type AudioAsset = z.infer<typeof audioAssetSchema>;
+
+export const videoAssetSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["cutscene", "transition", "scene_bg"]),
+  path: z.string(),
+  poster: z.string().optional(),
+  preloadPriority: chapterAssetPreloadPrioritySchema.default("normal")
+});
+export type VideoAsset = z.infer<typeof videoAssetSchema>;
+
+export const imageAssetSchema = z.object({
+  id: z.string(),
+  path: z.string(),
+  preloadPriority: chapterAssetPreloadPrioritySchema.default("normal")
+});
+export type ImageAsset = z.infer<typeof imageAssetSchema>;
+
+export const spriteAssetSchema = z.object({
+  id: z.string(),
+  path: z.string(),
+  preloadPriority: chapterAssetPreloadPrioritySchema.default("normal")
+});
+export type SpriteAsset = z.infer<typeof spriteAssetSchema>;
+
+export const sceneEnterTriggerSchema = z.object({
+  type: z.literal("scene_enter"),
+  sceneId: z.string(),
+  audioIds: z.array(z.string()).default([]),
+  videoIds: z.array(z.string()).default([])
+});
+export type SceneEnterTrigger = z.infer<typeof sceneEnterTriggerSchema>;
+
+export const nodeEnterTriggerSchema = z.object({
+  type: z.literal("node_enter"),
+  nodeId: z.string(),
+  audioIds: z.array(z.string()).default([]),
+  videoIds: z.array(z.string()).default([]),
+  dedupeOnce: z.boolean().default(true)
+});
+export type NodeEnterTrigger = z.infer<typeof nodeEnterTriggerSchema>;
+
+export const timelineCueTriggerSchema = z.object({
+  type: z.literal("timeline_cue"),
+  cueId: z.string(),
+  audioIds: z.array(z.string()).default([]),
+  videoIds: z.array(z.string()).default([])
+});
+export type TimelineCueTrigger = z.infer<typeof timelineCueTriggerSchema>;
+
+export const assetTriggerSchema = z.discriminatedUnion("type", [
+  sceneEnterTriggerSchema,
+  nodeEnterTriggerSchema,
+  timelineCueTriggerSchema
+]);
+export type AssetTrigger = z.infer<typeof assetTriggerSchema>;
+
+export const chapterAssetManifestV2Schema = z.object({
+  version: z.literal("2"),
+  baseKey: z.string(),
+  audio: z.array(audioAssetSchema).default([]),
+  video: z.array(videoAssetSchema).default([]),
+  image: z.array(imageAssetSchema).default([]),
+  sprite: z.array(spriteAssetSchema).default([]),
+  triggers: z
+    .object({
+      sceneEnter: z.array(sceneEnterTriggerSchema).default([]),
+      nodeEnter: z.array(nodeEnterTriggerSchema).default([]),
+      timelineCue: z.array(timelineCueTriggerSchema).default([])
+    })
+    .default({
+      sceneEnter: [],
+      nodeEnter: [],
+      timelineCue: []
+    })
+});
+export type ChapterAssetManifestV2 = z.infer<typeof chapterAssetManifestV2Schema>;
+
+export const chapterAssetLegacyManifestSchema = z.object({
   images: z.array(z.string()).default([]),
   audios: z.array(z.string()).default([]),
   sprites: z.array(z.string()).default([])
 });
+export type ChapterAssetLegacyManifest = z.infer<typeof chapterAssetLegacyManifestSchema>;
+
+export const assetResolutionSourceSchema = z.enum(["local", "r2"]);
+export type AssetResolutionSource = z.infer<typeof assetResolutionSourceSchema>;
+
+export const resolvedAssetRefSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["audio", "video", "image", "sprite"]),
+  source: assetResolutionSourceSchema,
+  path: z.string(),
+  url: z.string()
+});
+export type ResolvedAssetRef = z.infer<typeof resolvedAssetRefSchema>;
+
+function assetIdFromPath(assetPath: string, fallbackPrefix: string, index: number): string {
+  const normalized = assetPath.split("?")[0]?.split("#")[0] ?? "";
+  const fileName = normalized.split("/").filter(Boolean).at(-1) ?? `${fallbackPrefix}-${index + 1}`;
+  const withoutExt = fileName.replace(/\.[a-z0-9]+$/i, "");
+  return withoutExt || `${fallbackPrefix}-${index + 1}`;
+}
+
+function inferBaseKeyFromLegacyPaths(paths: string[]): string {
+  for (const rawPath of paths) {
+    const seg = rawPath.split("/").filter(Boolean);
+    if (seg.length >= 3 && ["images", "audio", "sprites"].includes(seg[0] ?? "")) {
+      return `${seg[1] ?? "fire-dawn"}/${seg[2] ?? "ch01"}`;
+    }
+  }
+
+  return "fire-dawn/ch01";
+}
+
+function inferLegacyAudioBus(rawPath: string): ChapterAssetAudioBus {
+  const fileName = rawPath.split("/").filter(Boolean).at(-1)?.toLowerCase() ?? "";
+  if (fileName.startsWith("bgm-")) return "bgm";
+  if (fileName.startsWith("voice-")) return "voice";
+  if (fileName.startsWith("ambient-")) return "ambient";
+  return "sfx";
+}
+
+function toLegacyRelativePath(kind: "audio" | "image" | "sprite", rawPath: string): string {
+  const seg = rawPath.split("/").filter(Boolean);
+  const fileName = seg.at(-1) ?? rawPath;
+
+  if (kind === "image") return `image/${fileName}`;
+  if (kind === "sprite") return `sprite/${fileName}`;
+
+  const bus = inferLegacyAudioBus(rawPath);
+  return `audio/${bus}/${fileName}`;
+}
+
+export const chapterResourceManifestSchema = z
+  .union([chapterAssetManifestV2Schema, chapterAssetLegacyManifestSchema])
+  .transform((manifest): ChapterAssetManifestV2 => {
+    if ("version" in manifest) {
+      return manifest;
+    }
+
+    const allPaths = [...manifest.images, ...manifest.audios, ...manifest.sprites];
+    const baseKey = inferBaseKeyFromLegacyPaths(allPaths);
+
+    return {
+      version: "2",
+      baseKey,
+      audio: manifest.audios.map((rawPath, index) => ({
+        id: assetIdFromPath(rawPath, "audio", index),
+        bus: inferLegacyAudioBus(rawPath),
+        path: toLegacyRelativePath("audio", rawPath),
+        loop: inferLegacyAudioBus(rawPath) === "bgm" || inferLegacyAudioBus(rawPath) === "ambient",
+        defaultVolume: inferLegacyAudioBus(rawPath) === "sfx" ? 0.85 : 0.6,
+        preloadPriority:
+          inferLegacyAudioBus(rawPath) === "bgm" || inferLegacyAudioBus(rawPath) === "ambient" ? "critical" : "high"
+      })),
+      video: [],
+      image: manifest.images.map((rawPath, index) => ({
+        id: assetIdFromPath(rawPath, "image", index),
+        path: toLegacyRelativePath("image", rawPath),
+        preloadPriority: "high"
+      })),
+      sprite: manifest.sprites.map((rawPath, index) => ({
+        id: assetIdFromPath(rawPath, "sprite", index),
+        path: toLegacyRelativePath("sprite", rawPath),
+        preloadPriority: "high"
+      })),
+      triggers: {
+        sceneEnter: [],
+        nodeEnter: [],
+        timelineCue: []
+      }
+    };
+  });
 export type ChapterResourceManifest = z.infer<typeof chapterResourceManifestSchema>;
 
 export const chapterMetaSchema = z.object({

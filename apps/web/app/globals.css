@@ -1,117 +1,578 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   ODYSSEY DESIGN TOKENS
+   龙族 · 暗夜青铜卷轴
+   ═══════════════════════════════════════════════════════════ */
+
 :root {
-  --bg: #0f1014;
-  --panel: #161922;
-  --panel-muted: #202535;
-  --text: #ececf0;
-  --text-muted: #a9afc4;
-  --accent: #d4b67f;
-  --danger: #df5a5a;
-  --ok: #59c88f;
+  /* ── Ink Scale (墨色阶梯) ──────────────────────────────── */
+  --ody-black:        #0b0d12;
+  --ody-ink-900:      #0f1014;
+  --ody-ink-800:      #131620;
+  --ody-ink-700:      #161922;
+  --ody-ink-600:      #1d212e;
+  --ody-ink-500:      #202535;
+  --ody-ink-400:      #2a2f42;
+  --ody-ink-300:      #343a52;
+  --ody-ink-200:      #454d6f;
+  --ody-ink-100:      #6b7394;
+
+  /* ── Gold Scale (龙鳞金) ──────────────────────────────── */
+  --ody-gold-100:     #f5e6c8;
+  --ody-gold-200:     #e0c48f;
+  --ody-gold-300:     #d4b67f;
+  --ody-gold-400:     #b8934f;
+  --ody-gold-500:     #a88349;
+  --ody-gold-600:     #8a6a35;
+
+  /* ── Text ─────────────────────────────────────────────── */
+  --ody-text:         #ececf0;
+  --ody-text-muted:   #a9afc4;
+  --ody-text-on-gold: #1a1307;
+
+  /* ── Semantic ─────────────────────────────────────────── */
+  --ody-danger:       #df5a5a;
+  --ody-danger-dim:   #3a1a1a;
+  --ody-ok:           #59c88f;
+  --ody-ok-dim:       #152218;
+
+  /* ── Border & Glow ────────────────────────────────────── */
+  --ody-border:       rgba(210, 177, 122, 0.28);
+  --ody-border-hover: rgba(212, 182, 127, 0.50);
+  --ody-border-strong:rgba(212, 182, 127, 0.45);
+  --ody-border-subtle:rgba(212, 182, 127, 0.12);
+  --ody-border-danger:rgba(223, 90, 90, 0.40);
+  --ody-border-ok:    rgba(89, 200, 143, 0.45);
+  --ody-divider:      #2f3550;
+  --ody-glow:         0 0 12px rgba(212, 182, 127, 0.25);
+  --ody-glow-strong:  0 0 18px rgba(212, 182, 127, 0.40);
+  --ody-shadow-card:  0 2px 16px rgba(0, 0, 0, 0.40);
+
+  /* ── Surfaces (渐变面) ────────────────────────────────── */
+  --ody-surface-body:
+    radial-gradient(circle at 16% -12%, rgba(95, 123, 178, 0.48), transparent 42%),
+    radial-gradient(circle at 88% -6%, rgba(171, 130, 82, 0.32), transparent 40%),
+    linear-gradient(160deg, #1a2130 0%, #11151f 55%, #17231f 100%);
+  --ody-surface-card: linear-gradient(180deg, rgba(29, 33, 46, 0.95), rgba(17, 19, 26, 0.95));
+  --ody-surface-gate: linear-gradient(180deg, rgba(21, 34, 30, 0.94), rgba(14, 20, 18, 0.94));
+  --ody-surface-gold: linear-gradient(180deg, var(--ody-gold-300), var(--ody-gold-500));
+  --ody-surface-gold-hover: linear-gradient(180deg, var(--ody-gold-200), var(--ody-gold-400));
+  --ody-topbar-bg:
+    linear-gradient(
+      180deg,
+      rgba(27, 33, 46, 0.94) 0%,
+      rgba(18, 24, 36, 0.9) 100%
+    );
+  --ody-topbar-border: rgba(212, 182, 127, 0.26);
+  --ody-topbar-shadow: 0 8px 22px rgba(4, 5, 10, 0.36);
+  --ody-watch-bg:
+    linear-gradient(
+      180deg,
+      rgba(30, 37, 54, 0.94) 0%,
+      rgba(15, 20, 31, 0.94) 100%
+    );
+  --ody-watch-digit: #f6edd4;
+  --ody-watch-glow: 0 0 10px rgba(205, 233, 255, 0.28);
+  --ody-pixel-size: 2px;
+  --ody-ornament-gold: #e6cb95;
+
+  /* ── Radius ───────────────────────────────────────────── */
+  --ody-radius-sm:    6px;
+  --ody-radius:       10px;
+  --ody-radius-lg:    12px;
+  --ody-radius-pill:  999px;
+
+  /* ── Spacing ──────────────────────────────────────────── */
+  --ody-space-xs:     4px;
+  --ody-space-sm:     8px;
+  --ody-space-md:     12px;
+  --ody-space-lg:     16px;
+  --ody-space-xl:     24px;
+  --ody-space-2xl:    40px;
+
+  /* ── Typography ───────────────────────────────────────── */
+  --ody-font-serif:   "Noto Serif SC", "STSong", "Songti SC", serif;
+  --ody-font-mono:    "JetBrains Mono", "Menlo", monospace;
+  --ody-text-xs:      11px;
+  --ody-text-sm:      12px;
+  --ody-text-base:    14px;
+  --ody-text-lg:      16px;
+
+  /* ── Transition ───────────────────────────────────────── */
+  --ody-ease:         cubic-bezier(0.4, 0, 0.2, 1);
+  --ody-duration:     200ms;
 }
 
-* {
-  box-sizing: border-box;
+/* ── Tailwind @theme bridge (映射 → Tailwind utilities) ── */
+@theme {
+  --color-background:           var(--ody-ink-900);
+  --color-foreground:           var(--ody-text);
+  --color-muted:                var(--ody-ink-500);
+  --color-muted-foreground:     var(--ody-text-muted);
+  --color-card:                 var(--ody-ink-700);
+  --color-card-foreground:      var(--ody-text);
+  --color-popover:              var(--ody-ink-700);
+  --color-popover-foreground:   var(--ody-text);
+  --color-primary:              var(--ody-gold-300);
+  --color-primary-foreground:   var(--ody-text-on-gold);
+  --color-secondary:            var(--ody-ink-400);
+  --color-secondary-foreground: var(--ody-text);
+  --color-accent:               var(--ody-gold-300);
+  --color-accent-foreground:    var(--ody-text-on-gold);
+  --color-destructive:          var(--ody-danger);
+  --color-destructive-foreground: var(--ody-text);
+  --color-border:               var(--ody-border);
+  --color-input:                var(--ody-border);
+  --color-ring:                 var(--ody-border-strong);
+  --color-ok:                   var(--ody-ok);
+  --radius:                     var(--ody-radius-lg);
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL RESETS & BASE
+   ═══════════════════════════════════════════════════════════ */
+
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #181d2a, #0b0d12 60%);
-  color: var(--text);
-  font-family: "Noto Serif SC", "STSong", serif;
+  background: var(--ody-surface-body);
+  color: var(--ody-text);
+  font-family: var(--ody-font-serif);
+  font-size: var(--ody-text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  background-attachment: fixed;
 }
 
-main {
-  min-height: 100vh;
+main { min-height: 100vh; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--ody-divider);
+  margin: var(--ody-space-lg) 0;
 }
+
+::selection {
+  background: rgba(212, 182, 127, 0.30);
+  color: var(--ody-text);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   TOPBAR HUD
+   ═══════════════════════════════════════════════════════════ */
+
+.game-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: var(--ody-topbar-bg);
+  border-bottom: 1px solid var(--ody-topbar-border);
+  box-shadow: var(--ody-topbar-shadow);
+  backdrop-filter: blur(8px);
+}
+
+.game-topbar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px var(--ody-space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--ody-space-md);
+}
+
+.watch {
+  position: relative;
+  overflow: hidden;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ody-space-sm);
+  padding: 6px 10px;
+  border-radius: var(--ody-radius-sm);
+  border: 1px solid rgba(230, 203, 149, 0.34);
+  background: var(--ody-watch-bg);
+  box-shadow: var(--ody-watch-glow);
+}
+
+.watch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(230, 203, 149, 0.14) 0 var(--ody-pixel-size),
+      transparent var(--ody-pixel-size) calc(var(--ody-pixel-size) * 4)
+    ),
+    linear-gradient(
+      0deg,
+      rgba(205, 233, 255, 0.08) 0 var(--ody-pixel-size),
+      transparent var(--ody-pixel-size) calc(var(--ody-pixel-size) * 5)
+    );
+  pointer-events: none;
+  opacity: 0.42;
+}
+
+.watch-time {
+  position: relative;
+  z-index: 1;
+  font-family: var(--ody-font-mono);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: var(--ody-watch-digit);
+  text-shadow: 0 0 8px rgba(205, 233, 255, 0.36);
+  white-space: nowrap;
+}
+
+.watch-env {
+  position: relative;
+  z-index: 1;
+  font-size: var(--ody-text-xs);
+  line-height: 1.2;
+  white-space: nowrap;
+  border-radius: var(--ody-radius-pill);
+  padding: 2px 6px;
+  border: 1px solid transparent;
+}
+
+.watch-env.is-day {
+  color: #cfe7ff;
+  background: rgba(67, 119, 186, 0.24);
+  border-color: rgba(106, 162, 236, 0.38);
+}
+
+.watch-env.is-night {
+  color: #e8d7a8;
+  background: rgba(126, 98, 43, 0.22);
+  border-color: rgba(200, 164, 88, 0.35);
+}
+
+.topbar-chapter-title {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  color: var(--ody-ornament-gold);
+  font-size: var(--ody-text-lg);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════════════ */
 
 .shell {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 40px;
+  padding: var(--ody-space-xl) var(--ody-space-lg) var(--ody-space-2xl);
 }
 
 .grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 16px;
-}
-
-.card {
-  background: linear-gradient(180deg, rgba(29, 33, 46, 0.95), rgba(17, 19, 26, 0.95));
-  border: 1px solid rgba(210, 177, 122, 0.28);
-  border-radius: 12px;
-  padding: 16px;
+  gap: var(--ody-space-lg);
+  margin-top: var(--ody-space-lg);
 }
 
 .row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.btn {
-  background: #2a2f42;
-  color: var(--text);
-  border: 1px solid rgba(212, 182, 127, 0.45);
-  border-radius: 10px;
-  padding: 8px 12px;
-}
-
-.btn-accent {
-  background: linear-gradient(180deg, #d4b67f, #a88349);
-  border: none;
-  color: #1a1307;
-  font-weight: 600;
+  gap: var(--ody-space-sm);
 }
 
 .choices {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ody-space-sm);
+}
+
+@media (max-width: 900px) {
+  .game-topbar-inner {
+    padding: 8px var(--ody-space-md);
+    gap: var(--ody-space-sm);
+  }
+
+  .watch {
+    padding: 5px 8px;
+  }
+
+  .watch-time {
+    font-size: 14px;
+  }
+
+  .watch-env {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  .topbar-chapter-title {
+    font-size: 13px;
+  }
+
+  .grid { grid-template-columns: 1fr; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   CARD
+   ═══════════════════════════════════════════════════════════ */
+
+.card {
+  background: var(--ody-surface-card);
+  border: 1px solid var(--ody-border);
+  border-radius: var(--ody-radius-lg);
+  padding: var(--ody-space-lg);
+  box-shadow: var(--ody-shadow-card);
+}
+
+.dragon-card {
+  background: var(--ody-surface-card);
+  border: 1px solid var(--ody-border);
+  border-radius: var(--ody-radius-lg);
+  padding: var(--ody-space-lg);
+  box-shadow: var(--ody-shadow-card);
+}
+
+.dragon-card-header {
+  border-bottom: 1px solid var(--ody-border-subtle);
+  padding-bottom: var(--ody-space-lg);
+  margin-bottom: var(--ody-space-lg);
+}
+
+.dragon-card-title {
+  color: var(--ody-gold-300);
+  font-family: var(--ody-font-serif);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.dragon-card-description {
+  color: var(--ody-text-muted);
+  font-size: var(--ody-text-sm);
+  margin-top: var(--ody-space-xs);
+}
+
+.dragon-card-footer {
+  border-top: 1px solid var(--ody-border-subtle);
+  padding-top: var(--ody-space-lg);
+  margin-top: var(--ody-space-lg);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   BUTTON (base)
+   ═══════════════════════════════════════════════════════════ */
+
+button { cursor: pointer; }
+button:disabled { opacity: 0.50; cursor: not-allowed; }
+
+.btn {
+  background: var(--ody-ink-400);
+  color: var(--ody-text);
+  border: 1px solid var(--ody-border-strong);
+  border-radius: var(--ody-radius);
+  padding: var(--ody-space-sm) var(--ody-space-md);
+}
+
+.btn-accent {
+  background: var(--ody-surface-gold);
+  border: none;
+  color: var(--ody-text-on-gold);
+  font-weight: 600;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DRAGON BUTTON (variant system)
+   ═══════════════════════════════════════════════════════════ */
+
+.dragon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-family: var(--ody-font-serif);
+  font-size: var(--ody-text-base);
+  border-radius: var(--ody-radius);
+  padding: var(--ody-space-sm) var(--ody-space-lg);
+  transition: all var(--ody-duration) var(--ody-ease);
+  line-height: 1.4;
+}
+
+.dragon-btn:disabled {
+  opacity: 0.50;
+  cursor: not-allowed;
+}
+
+.dragon-btn-default {
+  background: var(--ody-surface-gold);
+  border: none;
+  color: var(--ody-text-on-gold);
+  font-weight: 600;
+  box-shadow: var(--ody-glow);
+}
+
+.dragon-btn-default:hover:not(:disabled) {
+  background: var(--ody-surface-gold-hover);
+  box-shadow: var(--ody-glow-strong);
+}
+
+.dragon-btn-secondary {
+  background: var(--ody-ink-400);
+  color: var(--ody-text);
+  border: 1px solid var(--ody-border-strong);
+}
+
+.dragon-btn-secondary:hover:not(:disabled) {
+  background: var(--ody-ink-300);
+  border-color: var(--ody-border-hover);
+}
+
+.dragon-btn-destructive {
+  background: var(--ody-danger-dim);
+  color: var(--ody-danger);
+  border: 1px solid var(--ody-border-danger);
+}
+
+.dragon-btn-destructive:hover:not(:disabled) {
+  background: #4a2020;
+  border-color: rgba(223, 90, 90, 0.6);
+}
+
+.dragon-btn-outline {
+  background: transparent;
+  color: var(--ody-text);
+  border: 1px solid var(--ody-border);
+}
+
+.dragon-btn-outline:hover:not(:disabled) {
+  background: rgba(212, 182, 127, 0.08);
+  border-color: var(--ody-border-hover);
+}
+
+.dragon-btn-ghost {
+  background: transparent;
+  color: var(--ody-text-muted);
+  border: none;
+}
+
+.dragon-btn-ghost:hover:not(:disabled) {
+  background: rgba(212, 182, 127, 0.08);
+  color: var(--ody-text);
+}
+
+.dragon-btn-link {
+  background: transparent;
+  color: var(--ody-gold-300);
+  border: none;
+  box-shadow: none;
+  text-decoration-line: underline;
+  text-underline-offset: 4px;
+}
+
+.dragon-btn-link:hover:not(:disabled) {
+  color: var(--ody-gold-200);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   INPUT
+   ═══════════════════════════════════════════════════════════ */
+
+.dragon-input {
+  width: 100%;
+  background: var(--ody-ink-800);
+  color: var(--ody-text);
+  border: 1px solid var(--ody-ink-200);
+  border-radius: var(--ody-radius-sm);
+  padding: var(--ody-space-sm) var(--ody-space-md);
+  font-family: var(--ody-font-serif);
+  font-size: var(--ody-text-base);
+  transition: border-color var(--ody-duration) var(--ody-ease);
+  outline: none;
+}
+
+.dragon-input::placeholder {
+  color: var(--ody-ink-100);
+}
+
+.dragon-input:focus {
+  border-color: var(--ody-border-strong);
+  box-shadow: 0 0 0 2px rgba(212, 182, 127, 0.12);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   MICRO ELEMENTS
+   ═══════════════════════════════════════════════════════════ */
+
+.small {
+  color: var(--ody-text-muted);
+  font-size: var(--ody-text-sm);
+}
+
+.tag {
+  display: inline-flex;
+  padding: 2px var(--ody-space-sm);
+  border-radius: var(--ody-radius-pill);
+  background: rgba(212, 182, 127, 0.22);
+  font-size: var(--ody-text-sm);
+  color: var(--ody-gold-200);
 }
 
 .choice-btn {
   text-align: left;
 }
 
-.small {
-  color: var(--text-muted);
-  font-size: 12px;
+.error-text {
+  color: #ff8f8f;
+  font-size: var(--ody-text-sm);
+  margin-top: var(--ody-space-md);
 }
 
-.tag {
-  display: inline-flex;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(212, 182, 127, 0.22);
-  font-size: 12px;
+
+/* ═══════════════════════════════════════════════════════════
+   SPECIAL SECTIONS
+   ═══════════════════════════════════════════════════════════ */
+
+.name-gate {
+  margin-bottom: var(--ody-space-lg);
+  border-color: var(--ody-border-ok);
+  background: var(--ody-surface-gate);
 }
 
 .canvas-wrap {
+  position: relative;
   height: 280px;
   border: 1px solid rgba(212, 182, 127, 0.2);
-  border-radius: 10px;
+  border-radius: var(--ody-radius);
   overflow: hidden;
 }
 
-.name-gate {
-  margin-bottom: 16px;
-  border-color: rgba(89, 200, 143, 0.45);
-  background: linear-gradient(180deg, rgba(21, 34, 30, 0.94), rgba(14, 20, 18, 0.94));
+.canvas-stage {
+  width: 100%;
+  height: 100%;
 }
 
-@media (max-width: 900px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
+.cutscene-video-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background: rgba(11, 13, 18, 0.12);
+}
+
+.cutscene-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }

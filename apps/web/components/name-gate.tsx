@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { DragonButton } from "@/components/ui-dragon";
 
 type Props = {
   displayName: string;
@@ -30,45 +30,34 @@ export function NameGate({
 
   return (
     <section className="name-gate card">
-      <h2 style={{ marginTop: 0 }}>命名入场</h2>
-      <p className="small">先取一个名字再进入《火之晨曦》主线。名字支持随机生成和自定义。</p>
+      <h2 style={{ marginTop: 0 }}>命名出征 ⚔️</h2>
+      <p className="small">给自己取个响亮的名号，再推开《火之晨曦》的大门。可随机召唤，也可亲手书写。</p>
 
-      <div className="row" style={{ marginTop: 12 }}>
+      <div className="row" style={{ marginTop: "var(--ody-space-md)" }}>
         <input
+          className="dragon-input"
           value={displayName}
           onChange={(event) => onDisplayNameChange(event.target.value)}
-          placeholder="输入你的名字"
-          style={{
-            width: "100%",
-            borderRadius: 8,
-            border: "1px solid #454d6f",
-            background: "#10141f",
-            color: "#fff",
-            padding: "8px 10px"
-          }}
+          placeholder="写下你的冒险名号"
         />
       </div>
 
-      <div className="row" style={{ marginTop: 12 }}>
-        <Button onClick={onRandomLocal}>随机一个</Button>
-        <Button onClick={onRefreshSuggestions}>换一批建议名</Button>
-        <Button variant="accent" onClick={onSubmit} disabled={loading}>
-          {loading ? "进入中..." : "进入游戏"}
-        </Button>
+      <div className="row" style={{ marginTop: "var(--ody-space-md)" }}>
+        <DragonButton variant="secondary" onClick={onRandomLocal}>随机召唤</DragonButton>
+        <DragonButton variant="secondary" onClick={onRefreshSuggestions}>再换一批</DragonButton>
+        <DragonButton onClick={onSubmit} disabled={loading}>
+          {loading ? "启程中..." : "踏入旅程"}
+        </DragonButton>
       </div>
 
-      {error ? (
-        <div className="small" style={{ color: "#ff8f8f", marginTop: 10 }}>
-          {error}
-        </div>
-      ) : null}
+      {error ? <div className="error-text">{error}</div> : null}
 
       {hasSuggestions ? (
-        <div className="choices" style={{ marginTop: 12 }}>
+        <div className="choices" style={{ marginTop: "var(--ody-space-md)" }}>
           {suggestions.map((item) => (
-            <Button key={item} className="choice-btn" onClick={() => onPickSuggestion(item)}>
+            <DragonButton key={item} variant="outline" className="choice-btn" onClick={() => onPickSuggestion(item)}>
               {item}
-            </Button>
+            </DragonButton>
           ))}
         </div>
       ) : null}

@@ -2,24 +2,33 @@ import gsap from "gsap";
 import { Howl, Howler } from "howler";
 import type { Application, Container } from "pixi.js";
 import type { AudioCue, CompiledSceneTimeline } from "@odyssey/shared";
+import { resolveAssetUrl } from "@/lib/asset-resolver";
 
 export type AudioBusVolumes = {
   master: number;
   bgm: number;
   sfx: number;
   voice: number;
+  ambient: number;
 };
 
 function busFactor(bus: AudioCue["bus"], volumes: AudioBusVolumes): number {
   if (bus === "master") return volumes.master;
   if (bus === "bgm") return volumes.master * volumes.bgm;
   if (bus === "sfx") return volumes.master * volumes.sfx;
-  return volumes.master * volumes.voice;
+  if (bus === "voice") return volumes.master * volumes.voice;
+  return volumes.master * volumes.ambient;
 }
 
 export function playAudioCue(cue: AudioCue, volumes: AudioBusVolumes): Howl {
+  const resolvedSrc = resolveAssetUrl({
+    id: cue.id,
+    kind: "audio",
+    assetPath: cue.src
+  });
+
   const sound = new Howl({
-    src: [cue.src],
+    src: [resolvedSrc],
     volume: cue.volume * busFactor(cue.bus, volumes)
   });
   sound.play();
@@ -44,7 +53,8 @@ export function playCutsceneTimeline(
   app: Application,
   root: Container,
   spec: CompiledSceneTimeline,
-  volumes: AudioBusVolumes
+  volumes: AudioBusVolumes,
+  options?: { onTimelineCue?: (payload: { cueId: string; atMs: number }) => void }
 ): gsap.core.Timeline {
   const timeline = gsap.timeline();
 
@@ -64,6 +74,7 @@ export function playCutsceneTimeline(
 
   for (const cue of spec.audios) {
     timeline.call(() => {
+      options?.onTimelineCue?.({ cueId: cue.id, atMs: cue.atMs });
       playAudioCue(cue, volumes);
     }, undefined, cue.atMs / 1000);
   }

@@ -1,41 +1,50 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as PIXI from "pixi.js";
 import { playCutsceneTimeline, setMasterMuted } from "@/lib/cutscene-runtime";
 import type { CompiledSceneTimeline } from "@odyssey/shared";
 
+type VideoCue = {
+  src: string;
+  poster?: string;
+  loop?: boolean;
+};
+
 type Props = {
   spec: CompiledSceneTimeline;
   muted: boolean;
+  videoCueMap?: Record<string, VideoCue>;
   onPlayed?: () => void;
 };
 
-export function CutsceneCanvas({ spec, muted, onPlayed }: Props) {
-  const hostRef = useRef<HTMLDivElement | null>(null);
+export function CutsceneCanvas({ spec, muted, videoCueMap, onPlayed }: Props) {
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const [activeVideo, setActiveVideo] = useState<VideoCue | null>(null);
 
   const volumes = useMemo(
-    () => ({ master: 1, bgm: 0.6, sfx: 0.9, voice: 0.8 }),
+    () => ({ master: 1, bgm: 0.6, sfx: 0.9, voice: 0.8, ambient: 0.55 }),
     []
   );
 
   useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
+    const stage = stageRef.current;
+    if (!stage) return;
 
     const app = new PIXI.Application();
     let cancelled = false;
+    setActiveVideo(null);
 
     void (async () => {
       await app.init({
-        width: host.clientWidth || 640,
+        width: stage.clientWidth || 640,
         height: 280,
         background: "#10131a"
       });
 
       if (cancelled) return;
 
-      host.appendChild(app.canvas);
+      stage.appendChild(app.canvas);
 
       const root = new PIXI.Container();
       root.name = "root";
@@ -59,18 +68,44 @@ export function CutsceneCanvas({ spec, muted, onPlayed }: Props) {
 
       app.stage.addChild(root);
       setMasterMuted(muted);
-      const timeline = playCutsceneTimeline(app, root, spec, volumes);
+      const timeline = playCutsceneTimeline(app, root, spec, volumes, {
+        onTimelineCue: ({ cueId }) => {
+          const mapped = videoCueMap?.[cueId];
+          if (mapped) {
+            setActiveVideo(mapped);
+          }
+        }
+      });
       timeline.eventCallback("onComplete", () => onPlayed?.());
     })();
 
     return () => {
       cancelled = true;
       app.destroy(true, { children: true });
-      if (app.canvas && host.contains(app.canvas)) {
-        host.removeChild(app.canvas);
+      if (app.canvas && stage.contains(app.canvas)) {
+        stage.removeChild(app.canvas);
       }
     };
-  }, [spec, muted, volumes, onPlayed]);
+  }, [spec, muted, volumes, videoCueMap, onPlayed]);
 
-  return <div className="canvas-wrap" ref={hostRef} />;
+  return (
+    <div className="canvas-wrap">
+      <div className="canvas-stage" ref={stageRef} />
+      {activeVideo ? (
+        <div className="cutscene-video-overlay">
+          <video
+            key={activeVideo.src}
+            className="cutscene-video"
+            src={activeVideo.src}
+            poster={activeVideo.poster}
+            autoPlay
+            loop={activeVideo.loop ?? false}
+            muted={muted}
+            playsInline
+            onEnded={() => setActiveVideo(null)}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
 }

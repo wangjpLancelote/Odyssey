@@ -8,9 +8,14 @@ describe("chapter-resource-manager", () => {
 
     expect(ch01.meta.chapterId).toBe("ch01");
     expect(ch01.nodes["fd-ch01-node-01"]?.id).toBe("fd-ch01-node-01");
+    expect(ch01.assetManifest.version).toBe("2");
+    expect(ch01.assetManifest.audio.length).toBeGreaterThan(0);
+    expect(ch01.criticalPreloadAssets.length).toBeGreaterThan(0);
 
     expect(ch02.meta.chapterId).toBe("ch02");
     expect(ch02.nodes["fd-ch02-node-01"]?.id).toBe("fd-ch02-node-01");
+    expect(ch02.assetManifest.version).toBe("2");
+    expect(ch02.assetManifest.video.length).toBeGreaterThan(0);
   });
 
   test("compiles chapter cutscene timeline", async () => {

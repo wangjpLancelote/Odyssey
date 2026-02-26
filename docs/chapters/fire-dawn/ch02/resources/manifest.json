@@ -1,14 +1,111 @@
 {
-  "images": [
-    "/images/fire-dawn/ch02/bg-corridor.png",
-    "/images/fire-dawn/ch02/bg-generator.png",
-    "/images/fire-dawn/ch02/bg-altar.png"
+  "version": "2",
+  "baseKey": "fire-dawn/ch02",
+  "audio": [
+    {
+      "id": "bgm-ash",
+      "bus": "bgm",
+      "path": "audio/bgm/bgm-ash.mp3",
+      "loop": true,
+      "defaultVolume": 0.5,
+      "preloadPriority": "critical"
+    },
+    {
+      "id": "ambient-generator",
+      "bus": "ambient",
+      "path": "audio/ambient/generator-loop.mp3",
+      "loop": true,
+      "defaultVolume": 0.38,
+      "preloadPriority": "high"
+    },
+    {
+      "id": "sfx-shock",
+      "bus": "sfx",
+      "path": "audio/sfx/shock-01.mp3",
+      "loop": false,
+      "defaultVolume": 0.82,
+      "preloadPriority": "high"
+    },
+    {
+      "id": "fd-ch02-node-03-zh",
+      "bus": "voice",
+      "path": "audio/voice/fd-ch02-node-03-zh.mp3",
+      "loop": false,
+      "defaultVolume": 0.9,
+      "preloadPriority": "normal"
+    }
   ],
-  "audios": [
-    "/audio/fire-dawn/ch02/bgm-ash.mp3",
-    "/audio/fire-dawn/ch02/sfx-shock.mp3"
+  "video": [
+    {
+      "id": "fire-dawn-ch02-open",
+      "kind": "cutscene",
+      "path": "video/cutscene/fire-dawn-ch02-open.mp4",
+      "poster": "image/bg-corridor.png",
+      "preloadPriority": "high"
+    },
+    {
+      "id": "chapter-shift-02",
+      "kind": "transition",
+      "path": "video/transition/chapter-shift-02.webm",
+      "poster": "image/bg-altar.png",
+      "preloadPriority": "normal"
+    }
   ],
-  "sprites": [
-    "/sprites/fire-dawn/ch02/shockwave.png"
-  ]
+  "image": [
+    {
+      "id": "bg-corridor",
+      "path": "image/bg-corridor.png",
+      "preloadPriority": "critical"
+    },
+    {
+      "id": "bg-generator",
+      "path": "image/bg-generator.png",
+      "preloadPriority": "high"
+    },
+    {
+      "id": "bg-altar",
+      "path": "image/bg-altar.png",
+      "preloadPriority": "normal"
+    }
+  ],
+  "sprite": [
+    {
+      "id": "shockwave",
+      "path": "sprite/shockwave.png",
+      "preloadPriority": "high"
+    }
+  ],
+  "triggers": {
+    "sceneEnter": [
+      {
+        "type": "scene_enter",
+        "sceneId": "fd-ch02-scene-corridor",
+        "audioIds": ["bgm-ash", "ambient-generator"],
+        "videoIds": []
+      }
+    ],
+    "nodeEnter": [
+      {
+        "type": "node_enter",
+        "nodeId": "fd-ch02-node-03",
+        "audioIds": ["fd-ch02-node-03-zh"],
+        "videoIds": [],
+        "dedupeOnce": true
+      }
+    ],
+    "timelineCue": [
+      {
+        "type": "timeline_cue",
+        "cueId": "bgm-ash",
+        "audioIds": [],
+        "videoIds": ["fire-dawn-ch02-open"]
+      },
+      {
+        "type": "timeline_cue",
+        "cueId": "sfx-shock",
+        "audioIds": ["sfx-shock"],
+        "videoIds": []
+      }
+    ]
+  }
 }

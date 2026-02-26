@@ -18,9 +18,11 @@ import {
   type ChapterTimeline,
   type CompiledSceneTimeline,
   type DialogueNode,
+  type ResolvedAssetRef,
   type SceneStoryboardPlan,
   type StoryboardModule
 } from "@odyssey/shared";
+import { resolveAssetRef } from "@/lib/asset-resolver";
 import { z } from "zod";
 
 function resolveWorkspaceRoot(): string {
@@ -62,6 +64,8 @@ export type ChapterBundle = {
   chapterId: string;
   meta: ChapterMeta;
   resources: ChapterResourceManifest;
+  assetManifest: ChapterResourceManifest;
+  criticalPreloadAssets: ResolvedAssetRef[];
   nodes: Record<string, DialogueNode>;
   orderedNodeIds: string[];
   modulesById: Map<string, StoryboardModule>;
@@ -81,6 +85,76 @@ function normalizeChapterError(error: unknown): never {
   }
 
   throw error;
+}
+
+function preloadScore(priority: "critical" | "high" | "normal" | "low"): number {
+  if (priority === "critical") return 4;
+  if (priority === "high") return 3;
+  if (priority === "normal") return 2;
+  return 1;
+}
+
+function buildCriticalPreloadAssets(params: {
+  storylineId: string;
+  chapterId: string;
+  manifest: ChapterResourceManifest;
+}): ResolvedAssetRef[] {
+  const { storylineId, chapterId, manifest } = params;
+  const byAudioId = new Map(manifest.audio.map((item) => [item.id, item]));
+  const byVideoId = new Map(manifest.video.map((item) => [item.id, item]));
+  const resolved = new Map<string, ResolvedAssetRef>();
+
+  function pushResolved(ref: ResolvedAssetRef): void {
+    resolved.set(`${ref.kind}:${ref.id}`, ref);
+  }
+
+  function pushAudioById(id: string): void {
+    const item = byAudioId.get(id);
+    if (!item) return;
+    pushResolved(
+      resolveAssetRef({
+        id: item.id,
+        kind: "audio",
+        assetPath: item.path,
+        storylineId,
+        chapterId,
+        baseKey: manifest.baseKey
+      })
+    );
+  }
+
+  function pushVideoById(id: string): void {
+    const item = byVideoId.get(id);
+    if (!item) return;
+    pushResolved(
+      resolveAssetRef({
+        id: item.id,
+        kind: "video",
+        assetPath: item.path,
+        storylineId,
+        chapterId,
+        baseKey: manifest.baseKey
+      })
+    );
+  }
+
+  const firstSceneEnter = manifest.triggers.sceneEnter[0];
+  for (const audioId of firstSceneEnter?.audioIds ?? []) {
+    pushAudioById(audioId);
+  }
+  for (const videoId of firstSceneEnter?.videoIds ?? []) {
+    pushVideoById(videoId);
+  }
+
+  for (const item of manifest.audio.filter((asset) => preloadScore(asset.preloadPriority) >= 3)) {
+    pushAudioById(item.id);
+  }
+
+  for (const item of manifest.video.filter((asset) => preloadScore(asset.preloadPriority) >= 3)) {
+    pushVideoById(item.id);
+  }
+
+  return [...resolved.values()];
 }
 
 export class ChapterResourceManager {
@@ -105,6 +179,20 @@ export class ChapterResourceManager {
   async getTimeline(storylineId: string): Promise<ChapterTimeline> {
     const registry = await this.getRegistry(storylineId);
     return registry.timeline;
+  }
+
+  async getChapterAssets(
+    storylineId: string,
+    chapterId: string
+  ): Promise<{
+    assetManifest: ChapterResourceManifest;
+    criticalPreloadAssets: ResolvedAssetRef[];
+  }> {
+    const bundle = await this.loadChapterBundle(storylineId, chapterId);
+    return {
+      assetManifest: bundle.assetManifest,
+      criticalPreloadAssets: bundle.criticalPreloadAssets
+    };
   }
 
   async assertStartableChapter(storylineId: string, chapterId: string): Promise<void> {
@@ -256,6 +344,11 @@ export class ChapterResourceManager {
     }
 
     const resources = chapterResourceManifestSchema.parse(resourceRaw);
+    const criticalPreloadAssets = buildCriticalPreloadAssets({
+      storylineId,
+      chapterId,
+      manifest: resources
+    });
 
     const rawNodes = z.array(rawChapterNodeSchema).parse(nodeRaw) as RawChapterNode[];
     const rawChoices = z.array(rawChapterChoiceSchema).parse(choiceRaw) as RawChapterChoice[];
@@ -343,6 +436,8 @@ export class ChapterResourceManager {
       chapterId,
       meta,
       resources,
+      assetManifest: resources,
+      criticalPreloadAssets,
       nodes,
       orderedNodeIds: rawNodes.map((item) => item.id),
       modulesById,

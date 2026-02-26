@@ -2,28 +2,28 @@
   {
     "id": "fd-ch02-choice-01",
     "nodeId": "fd-ch02-node-01",
-    "label": "点亮备用电源",
+    "label": "点亮备用电源，重启光源",
     "nextNodeId": "fd-ch02-node-02",
     "branchTag": "power_restore"
   },
   {
     "id": "fd-ch02-choice-02",
     "nodeId": "fd-ch02-node-01",
-    "label": "穿过断线区",
+    "label": "穿过断线区，抢先一步",
     "nextNodeId": "fd-ch02-node-03",
     "branchTag": "rush_cross"
   },
   {
     "id": "fd-ch02-choice-03",
     "nodeId": "fd-ch02-node-02",
-    "label": "继续推进",
+    "label": "压下动摇，继续推进",
     "nextNodeId": "fd-ch02-node-04",
     "branchTag": "push_forward"
   },
   {
     "id": "fd-ch02-choice-04",
     "nodeId": "fd-ch02-node-03",
-    "label": "稳住呼吸再前进",
+    "label": "稳住呼吸，再向前一步",
     "nextNodeId": "fd-ch02-node-04",
     "branchTag": "steady_advance"
   }
