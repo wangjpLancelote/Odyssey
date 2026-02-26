@@ -14,11 +14,7 @@ export async function POST(req: Request) {
     }
     const cutsceneId = body.cutsceneId as keyof typeof cutsceneDslManifest;
 
-    const context = gameStore.getCutsceneContext(
-      body.sessionId,
-      token,
-      cutsceneId
-    );
+    const context = await gameStore.getCutsceneContext(body.sessionId, token, cutsceneId);
 
     const timeline = await loadCompiledTimeline({
       cutsceneId: context.cutsceneId,

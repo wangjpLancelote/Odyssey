@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   try {
     const token = requireSessionToken(req);
     const body = await parseJson(req, restoreFootprintRequestSchema);
-    return NextResponse.json(gameStore.restore(body.sessionId, token, body.checkpointId));
+    return NextResponse.json(await gameStore.restore(body.sessionId, token, body.checkpointId));
   } catch (error) {
     return apiError(error);
   }

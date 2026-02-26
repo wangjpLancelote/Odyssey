@@ -17,6 +17,7 @@
     "@odyssey/realtime": "workspace:*",
     "@odyssey/scene-dsl": "workspace:*",
     "@odyssey/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.49.1",
     "gsap": "^3.12.5",
     "howler": "^2.2.4",
     "next": "15.2.0",

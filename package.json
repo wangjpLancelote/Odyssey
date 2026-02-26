@@ -1,6 +1,9 @@
 {
   "name": "odyssey",
   "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1"
+  },
   "workspaces": [
     "apps/*",
     "services/*",

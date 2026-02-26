@@ -35,6 +35,10 @@ export function apiError(error: unknown): NextResponse {
           ? 401
           : error.message === "name_conflict"
             ? 409
+            : error.message === "supabase_env_missing"
+              ? 500
+              : error.message === "supabase_query_failed"
+                ? 503
             : 400;
 
     return NextResponse.json({ error: error.message }, { status });

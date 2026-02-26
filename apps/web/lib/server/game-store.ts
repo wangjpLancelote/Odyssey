@@ -9,20 +9,11 @@ import {
   defaultWordSpirits
 } from "@odyssey/domain";
 import {
-  addCheckpoint,
-  appendPlotEdge,
-  appendVisitedNode,
-  createFootprintMap,
-  createPlotTree,
-  restoreCheckpoint
-} from "@odyssey/engine";
-import {
   gameSessionSchema,
   type DialogueChoice,
   type DialogueNode,
   type FootprintMap,
   type GameSession,
-  type PlotEdge,
   type SideQuestState,
   type TelemetryEvent,
   type TuningConfig
@@ -31,8 +22,9 @@ import { detectDayNightBySystemTime } from "@/lib/day-night";
 import { generateDisplayNameSuggestions } from "@/lib/name-generator";
 import { normalizeDisplayName, sanitizeDisplayName, validateDisplayName } from "@/lib/name-utils";
 import { cutsceneDslManifest } from "@/lib/cutscene-specs";
+import { getSupabaseAdminClient } from "@/lib/server/supabase";
 
-const SESSION_TTL_MS = 1000 * 60 * 60 * 6;
+const SESSION_TTL_SECONDS = 60 * 60 * 6;
 
 export class NameConflictError extends Error {
   readonly suggestions: string[];
@@ -43,22 +35,44 @@ export class NameConflictError extends Error {
   }
 }
 
-type SessionRuntime = {
-  session: GameSession;
-  sessionToken: string;
-  normalizedDisplayName: string;
-  plotEdges: PlotEdge[];
-  footprint: FootprintMap;
-  sideQuestState: SideQuestState;
-  currentBranchTag?: string;
-  expiresAtMs: number;
+type StartSessionRow = {
+  session_id: string | null;
+  session_token: string | null;
+  player_id: string | null;
+  display_name: string | null;
+  chapter_id: string | null;
+  current_node_id: string | null;
+  day_night: "DAY" | "NIGHT" | null;
+  status: "ACTIVE" | "PAUSED" | "FINISHED" | null;
+  created_at: string | null;
+  updated_at: string | null;
+  name_conflict: boolean;
 };
 
-class InMemoryGameStore {
-  private readonly sessions = new Map<string, SessionRuntime>();
-  private readonly activeNameRegistry = new Map<string, string>();
+type AuthorizedSessionRow = {
+  session_id: string;
+  session_token: string;
+  player_id: string;
+  display_name: string;
+  chapter_id: string;
+  current_node_id: string;
+  current_branch_tag: string | null;
+  day_night: "DAY" | "NIGHT";
+  status: "ACTIVE" | "PAUSED" | "FINISHED";
+  created_at: string;
+  updated_at: string;
+};
+
+type FootprintCheckpointRow = {
+  checkpoint_id: string;
+  node_id: string;
+  plot_cursor: number;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+class SupabaseGameStore {
   private readonly events: TelemetryEvent[] = [];
-  private sessionLock: Promise<void> = Promise.resolve();
 
   private readonly tuning: TuningConfig = {
     sideQuestTriggerRate: 0.5,
@@ -72,88 +86,84 @@ class InMemoryGameStore {
     sessionToken: string;
     node: DialogueNode;
   }> {
-    return this.withSessionLock(async () => {
-      this.cleanupExpiredSessions();
+    const validationError = validateDisplayName(displayName);
+    if (validationError) {
+      throw new Error("invalid_display_name");
+    }
 
-      const validationError = validateDisplayName(displayName);
-      if (validationError) {
-        throw new Error("invalid_display_name");
-      }
+    const sanitizedDisplayName = sanitizeDisplayName(displayName);
+    const dayNight = detectDayNightBySystemTime();
 
-      const sanitizedDisplayName = sanitizeDisplayName(displayName);
-      const normalizedDisplayName = normalizeDisplayName(sanitizedDisplayName);
-      const occupiedSessionId = this.activeNameRegistry.get(normalizedDisplayName);
-
-      if (occupiedSessionId && this.sessions.has(occupiedSessionId)) {
-        throw new NameConflictError(this.buildNameSuggestions(5));
-      }
-
-      const now = new Date().toISOString();
-      const sessionId = `session-${crypto.randomUUID()}`;
-      const playerId = `anon-${crypto.randomUUID()}`;
-      const sessionToken = `${crypto.randomUUID()}${crypto.randomUUID()}`;
-      const startNode = cassellIntroNodes[cassellIntroChapter.startNodeId];
-
-      let footprint = createFootprintMap(sessionId, playerId);
-      footprint = appendVisitedNode(footprint, startNode.id);
-      if (startNode.checkpoint) {
-        footprint = addCheckpoint(footprint, startNode.id, "0", { reason: "chapter_start" });
-      }
-
-      const session = gameSessionSchema.parse({
-        id: sessionId,
-        playerId,
-        displayName: sanitizedDisplayName,
-        chapterId: cassellIntroChapter.id,
-        currentNodeId: startNode.id,
-        status: "ACTIVE",
-        dayNight: detectDayNightBySystemTime(),
-        createdAt: now,
-        updatedAt: now
-      });
-
-      this.sessions.set(sessionId, {
-        session,
-        sessionToken,
-        normalizedDisplayName,
-        plotEdges: createPlotTree(sessionId).edges,
-        footprint,
-        sideQuestState: "IDLE",
-        expiresAtMs: Date.now() + SESSION_TTL_MS
-      });
-
-      this.activeNameRegistry.set(normalizedDisplayName, sessionId);
-
-      this.track({
-        name: telemetryEventNames.dialogueAdvanced,
-        playerId,
-        sessionId,
-        attributes: { nodeId: startNode.id }
-      });
-
-      return { session, sessionToken, node: startNode };
+    const { data, error } = await getSupabaseAdminClient().rpc("ody_start_session", {
+      p_display_name: sanitizedDisplayName,
+      p_chapter_id: cassellIntroChapter.id,
+      p_start_node_id: cassellIntroChapter.startNodeId,
+      p_day_night: dayNight,
+      p_session_ttl_seconds: SESSION_TTL_SECONDS
     });
+
+    if (error) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const row = (data as StartSessionRow[] | null)?.[0];
+    if (!row) {
+      throw new Error("session_start_failed");
+    }
+
+    if (row.name_conflict || !row.session_id || !row.session_token) {
+      throw new NameConflictError(await this.buildNameSuggestions(5));
+    }
+
+    const session = gameSessionSchema.parse({
+      id: row.session_id,
+      playerId: row.player_id,
+      displayName: row.display_name,
+      chapterId: row.chapter_id,
+      currentNodeId: row.current_node_id,
+      status: row.status,
+      dayNight: row.day_night,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    });
+
+    this.track({
+      name: telemetryEventNames.dialogueAdvanced,
+      playerId: session.playerId,
+      sessionId: session.id,
+      attributes: { nodeId: session.currentNodeId }
+    });
+
+    return {
+      session,
+      sessionToken: row.session_token,
+      node: cassellIntroNodes[session.currentNodeId]
+    };
   }
 
-  getNode(sessionId: string, sessionToken: string): { session: GameSession; node: DialogueNode } | null {
-    const runtime = this.ensureAuthorizedSession(sessionId, sessionToken);
-    if (!runtime) return null;
-
-    const node = cassellIntroNodes[runtime.session.currentNodeId];
-    return { session: runtime.session, node };
+  async getNode(
+    sessionId: string,
+    sessionToken: string
+  ): Promise<{ session: GameSession; node: DialogueNode } | null> {
+    try {
+      const row = await this.ensureAuthorizedSession(sessionId, sessionToken);
+      const session = this.toGameSession(row);
+      return { session, node: cassellIntroNodes[session.currentNodeId] };
+    } catch (error) {
+      if (error instanceof Error && error.message === "session_not_found") {
+        return null;
+      }
+      throw error;
+    }
   }
 
-  commitChoice(
+  async commitChoice(
     sessionId: string,
     sessionToken: string,
     choiceId: string
-  ): { session: GameSession; node: DialogueNode } {
-    const runtime = this.ensureAuthorizedSession(sessionId, sessionToken);
-    if (!runtime) {
-      throw new Error("session_not_found");
-    }
-
-    const currentNode = cassellIntroNodes[runtime.session.currentNodeId];
+  ): Promise<{ session: GameSession; node: DialogueNode }> {
+    const authorized = await this.ensureAuthorizedSession(sessionId, sessionToken);
+    const currentNode = cassellIntroNodes[authorized.current_node_id];
     const choice = currentNode.choices.find((item) => item.id === choiceId);
 
     if (!choice) {
@@ -165,41 +175,98 @@ class InMemoryGameStore {
       throw new Error("next_node_not_found");
     }
 
-    runtime.currentBranchTag = choice.branchTag;
+    const edge = buildPlotEdge(currentNode.id, nextNode.id, choice.id);
 
-    runtime.plotEdges = appendPlotEdge(
-      { sessionId, edges: runtime.plotEdges },
-      buildPlotEdge(currentNode.id, nextNode.id, choice.id)
-    ).edges;
+    const { error: edgeError } = await getSupabaseAdminClient().from("ody_plot_edges").insert({
+      session_id: sessionId,
+      from_node_id: edge.fromNodeId,
+      to_node_id: edge.toNodeId,
+      choice_id: edge.choiceId,
+      created_at: edge.createdAt
+    });
 
-    runtime.footprint = appendVisitedNode(runtime.footprint, nextNode.id);
+    if (edgeError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const { error: visitedError } = await getSupabaseAdminClient().from("ody_visited_nodes").upsert(
+      {
+        session_id: sessionId,
+        node_id: nextNode.id
+      },
+      { onConflict: "session_id,node_id" }
+    );
+
+    if (visitedError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const { count: plotEdgeCount, error: plotCountError } = await getSupabaseAdminClient()
+      .from("ody_plot_edges")
+      .select("id", { head: true, count: "exact" })
+      .eq("session_id", sessionId);
+
+    if (plotCountError) {
+      throw new Error("supabase_query_failed");
+    }
 
     if (nextNode.checkpoint) {
-      runtime.footprint = addCheckpoint(
-        runtime.footprint,
-        nextNode.id,
-        String(runtime.plotEdges.length),
-        { viaChoice: choice.id }
-      );
+      const { count: checkpointCount, error: checkpointCountError } = await getSupabaseAdminClient()
+        .from("ody_footprint_checkpoints")
+        .select("checkpoint_id", { head: true, count: "exact" })
+        .eq("session_id", sessionId);
+
+      if (checkpointCountError) {
+        throw new Error("supabase_query_failed");
+      }
+
+      const checkpointId = `cp-${sessionId}-${(checkpointCount ?? 0) + 1}`;
+
+      const { error: checkpointInsertError } = await getSupabaseAdminClient()
+        .from("ody_footprint_checkpoints")
+        .insert({
+          checkpoint_id: checkpointId,
+          session_id: sessionId,
+          node_id: nextNode.id,
+          plot_cursor: plotEdgeCount ?? 0,
+          metadata: {
+            viaChoice: choice.id
+          }
+        });
+
+      if (checkpointInsertError) {
+        throw new Error("supabase_query_failed");
+      }
 
       this.track({
         name: telemetryEventNames.checkpointCreated,
-        playerId: runtime.session.playerId,
+        playerId: authorized.player_id,
         sessionId,
         attributes: { nodeId: nextNode.id }
       });
     }
 
-    runtime.session = {
-      ...runtime.session,
-      currentNodeId: nextNode.id,
-      dayNight: detectDayNightBySystemTime(),
-      updatedAt: new Date().toISOString()
-    };
+    const dayNight = detectDayNightBySystemTime();
+    const { error: updateError } = await getSupabaseAdminClient()
+      .from("ody_sessions")
+      .update({
+        current_node_id: nextNode.id,
+        current_branch_tag: choice.branchTag ?? null,
+        day_night: dayNight,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", sessionId)
+      .eq("session_token", sessionToken);
+
+    if (updateError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const refreshed = await this.ensureAuthorizedSession(sessionId, sessionToken);
 
     this.track({
       name: telemetryEventNames.choiceCommitted,
-      playerId: runtime.session.playerId,
+      playerId: refreshed.player_id,
       sessionId,
       attributes: {
         choiceId,
@@ -208,62 +275,125 @@ class InMemoryGameStore {
       }
     });
 
-    return { session: runtime.session, node: nextNode };
+    return {
+      session: this.toGameSession(refreshed),
+      node: nextNode
+    };
   }
 
-  listChoices(sessionId: string, sessionToken: string): DialogueChoice[] {
-    const runtime = this.ensureAuthorizedSession(sessionId, sessionToken);
-    if (!runtime) {
-      throw new Error("session_not_found");
+  async listChoices(sessionId: string, sessionToken: string): Promise<DialogueChoice[]> {
+    const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
+    return cassellIntroNodes[runtime.current_node_id].choices;
+  }
+
+  async footprintMap(sessionId: string, sessionToken: string): Promise<FootprintMap> {
+    const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
+
+    const { data: checkpoints, error: checkpointError } = await getSupabaseAdminClient()
+      .from("ody_footprint_checkpoints")
+      .select("checkpoint_id,node_id,plot_cursor,metadata,created_at")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
+
+    if (checkpointError) {
+      throw new Error("supabase_query_failed");
     }
 
-    return cassellIntroNodes[runtime.session.currentNodeId].choices;
-  }
+    const { data: visitedNodeRows, error: visitedError } = await getSupabaseAdminClient()
+      .from("ody_visited_nodes")
+      .select("node_id")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
 
-  footprintMap(sessionId: string, sessionToken: string): FootprintMap {
-    const runtime = this.ensureAuthorizedSession(sessionId, sessionToken);
-    if (!runtime) {
-      throw new Error("session_not_found");
+    if (visitedError) {
+      throw new Error("supabase_query_failed");
     }
 
-    return runtime.footprint;
+    return {
+      sessionId,
+      playerId: runtime.player_id,
+      checkpoints: (checkpoints as FootprintCheckpointRow[]).map((row) => ({
+        checkpointId: row.checkpoint_id,
+        sessionId,
+        nodeId: row.node_id,
+        plotCursor: String(row.plot_cursor),
+        metadata: row.metadata ?? {},
+        createdAt: row.created_at
+      })),
+      visitedNodeIds: (visitedNodeRows ?? []).map((row) => row.node_id)
+    };
   }
 
-  restore(
+  async restore(
     sessionId: string,
     sessionToken: string,
     checkpointId: string
-  ): { session: GameSession; node: DialogueNode } {
-    const runtime = this.ensureAuthorizedSession(sessionId, sessionToken);
-    if (!runtime) {
-      throw new Error("session_not_found");
+  ): Promise<{ session: GameSession; node: DialogueNode }> {
+    const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
+
+    const { data: checkpoint, error: checkpointError } = await getSupabaseAdminClient()
+      .from("ody_footprint_checkpoints")
+      .select("checkpoint_id,node_id,plot_cursor")
+      .eq("session_id", sessionId)
+      .eq("checkpoint_id", checkpointId)
+      .maybeSingle();
+
+    if (checkpointError) {
+      throw new Error("supabase_query_failed");
     }
 
-    const checkpoint = restoreCheckpoint(runtime.footprint, checkpointId);
     if (!checkpoint) {
       throw new Error("checkpoint_not_found");
     }
 
-    const checkpointCursor = Number(checkpoint.plotCursor);
-    runtime.plotEdges = runtime.plotEdges.slice(0, checkpointCursor);
+    const { data: allEdges, error: edgeError } = await getSupabaseAdminClient()
+      .from("ody_plot_edges")
+      .select("id")
+      .eq("session_id", sessionId)
+      .order("id", { ascending: true });
 
-    runtime.session = {
-      ...runtime.session,
-      currentNodeId: checkpoint.nodeId,
-      dayNight: detectDayNightBySystemTime(),
-      updatedAt: new Date().toISOString()
-    };
+    if (edgeError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const idsToDelete = (allEdges ?? []).slice(checkpoint.plot_cursor).map((edge) => edge.id);
+    if (idsToDelete.length > 0) {
+      const { error: deleteError } = await getSupabaseAdminClient()
+        .from("ody_plot_edges")
+        .delete()
+        .in("id", idsToDelete);
+
+      if (deleteError) {
+        throw new Error("supabase_query_failed");
+      }
+    }
+
+    const { error: updateError } = await getSupabaseAdminClient()
+      .from("ody_sessions")
+      .update({
+        current_node_id: checkpoint.node_id,
+        day_night: detectDayNightBySystemTime(),
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", sessionId)
+      .eq("session_token", sessionToken);
+
+    if (updateError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const refreshed = await this.ensureAuthorizedSession(sessionId, sessionToken);
 
     this.track({
       name: telemetryEventNames.footprintRestored,
-      playerId: runtime.session.playerId,
+      playerId: runtime.player_id,
       sessionId,
       attributes: { checkpointId }
     });
 
     return {
-      session: runtime.session,
-      node: cassellIntroNodes[checkpoint.nodeId]
+      session: this.toGameSession(refreshed),
+      node: cassellIntroNodes[checkpoint.node_id]
     };
   }
 
@@ -272,31 +402,49 @@ class InMemoryGameStore {
     blocked: boolean;
     candidates: string[];
   }> {
-    const runtime = this.ensureAuthorizedSession(sessionId, sessionToken);
-    if (!runtime) {
-      throw new Error("session_not_found");
+    const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
+
+    const { data: sidequestStateRow, error: sidequestStateError } = await getSupabaseAdminClient()
+      .from("ody_sidequest_states")
+      .select("state")
+      .eq("session_id", sessionId)
+      .maybeSingle();
+
+    if (sidequestStateError) {
+      throw new Error("supabase_query_failed");
     }
 
     const result = await generateSideQuest(
       new MockLlmAdapter(),
       {
         sessionId,
-        playerId: runtime.session.playerId,
-        chapterId: runtime.session.chapterId,
-        nodeId: runtime.session.currentNodeId,
+        playerId: runtime.player_id,
+        chapterId: runtime.chapter_id,
+        nodeId: runtime.current_node_id,
         rank: defaultRank,
         bloodline: defaultBloodlineState,
         prohibitedCanonRules: []
       },
-      runtime.sideQuestState,
+      (sidequestStateRow?.state as SideQuestState | undefined) ?? "IDLE",
       defaultWordSpirits
     );
 
-    runtime.sideQuestState = result.nextState;
+    const { error: upsertError } = await getSupabaseAdminClient().from("ody_sidequest_states").upsert(
+      {
+        session_id: sessionId,
+        state: result.nextState,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "session_id" }
+    );
+
+    if (upsertError) {
+      throw new Error("supabase_query_failed");
+    }
 
     this.track({
       name: telemetryEventNames.sideQuestTriggered,
-      playerId: runtime.session.playerId,
+      playerId: runtime.player_id,
       sessionId,
       attributes: { blocked: result.blocked, riskFlags: result.riskFlags }
     });
@@ -308,33 +456,46 @@ class InMemoryGameStore {
     };
   }
 
-  getDayNight(sessionId: string, sessionToken: string): "DAY" | "NIGHT" {
-    const runtime = this.ensureAuthorizedSession(sessionId, sessionToken);
-    if (!runtime) {
-      throw new Error("session_not_found");
+  async getDayNight(sessionId: string, sessionToken: string): Promise<"DAY" | "NIGHT"> {
+    await this.ensureAuthorizedSession(sessionId, sessionToken);
+    const dayNight = detectDayNightBySystemTime();
+
+    const { error } = await getSupabaseAdminClient()
+      .from("ody_sessions")
+      .update({ day_night: dayNight, updated_at: new Date().toISOString() })
+      .eq("id", sessionId)
+      .eq("session_token", sessionToken);
+
+    if (error) {
+      throw new Error("supabase_query_failed");
     }
 
-    runtime.session.dayNight = detectDayNightBySystemTime();
-    return runtime.session.dayNight;
+    return dayNight;
   }
 
-  getCutsceneContext(
+  async getCutsceneContext(
     sessionId: string,
     sessionToken: string,
     cutsceneId: keyof typeof cutsceneDslManifest
-  ): { cutsceneId: keyof typeof cutsceneDslManifest; sceneId: string; dayNight: "DAY" | "NIGHT"; branchTag?: string } {
-    const runtime = this.ensureAuthorizedSession(sessionId, sessionToken);
-    if (!runtime) {
-      throw new Error("session_not_found");
-    }
-
+  ): Promise<{
+    cutsceneId: keyof typeof cutsceneDslManifest;
+    sceneId: string;
+    dayNight: "DAY" | "NIGHT";
+    branchTag?: string;
+  }> {
+    const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
     const manifest = cutsceneDslManifest[cutsceneId];
+
     return {
       cutsceneId,
       sceneId: manifest.sceneId,
-      dayNight: runtime.session.dayNight,
-      branchTag: runtime.currentBranchTag
+      dayNight: runtime.day_night,
+      branchTag: runtime.current_branch_tag ?? undefined
     };
+  }
+
+  async suggestDisplayNames(count: number): Promise<string[]> {
+    return this.buildNameSuggestions(count);
   }
 
   getTuning(): TuningConfig {
@@ -345,39 +506,78 @@ class InMemoryGameStore {
     return this.events.filter((evt) => evt.sessionId === sessionId);
   }
 
-  private cleanupExpiredSessions(): void {
-    const nowMs = Date.now();
-    for (const [sessionId, runtime] of this.sessions.entries()) {
-      if (runtime.expiresAtMs > nowMs) continue;
+  private async ensureAuthorizedSession(
+    sessionId: string,
+    sessionToken: string
+  ): Promise<AuthorizedSessionRow> {
+    const { data, error } = await getSupabaseAdminClient().rpc("ody_authorize_session", {
+      p_session_id: sessionId,
+      p_session_token: sessionToken,
+      p_session_ttl_seconds: SESSION_TTL_SECONDS
+    });
 
-      this.sessions.delete(sessionId);
-      const current = this.activeNameRegistry.get(runtime.normalizedDisplayName);
-      if (current === sessionId) {
-        this.activeNameRegistry.delete(runtime.normalizedDisplayName);
-      }
-    }
-  }
-
-  private ensureAuthorizedSession(sessionId: string, sessionToken: string): SessionRuntime | null {
-    this.cleanupExpiredSessions();
-
-    const runtime = this.sessions.get(sessionId);
-    if (!runtime) {
-      return null;
+    if (error) {
+      throw new Error("supabase_query_failed");
     }
 
-    if (runtime.sessionToken !== sessionToken) {
+    const authorized = (data as AuthorizedSessionRow[] | null)?.[0] ?? null;
+    if (authorized) {
+      return authorized;
+    }
+
+    const { data: existing, error: existingError } = await getSupabaseAdminClient()
+      .from("ody_sessions")
+      .select("id")
+      .eq("id", sessionId)
+      .maybeSingle();
+
+    if (existingError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    if (existing) {
       throw new Error("unauthorized_session");
     }
 
-    runtime.expiresAtMs = Date.now() + SESSION_TTL_MS;
-    return runtime;
+    throw new Error("session_not_found");
   }
 
-  private buildNameSuggestions(count: number): string[] {
-    const suggestions = generateDisplayNameSuggestions(Math.max(3, count * 2));
-    const available = suggestions.filter((name) => !this.activeNameRegistry.has(normalizeDisplayName(name)));
-    return available.slice(0, count);
+  private async buildNameSuggestions(count: number): Promise<string[]> {
+    const target = Math.max(3, count);
+    const pool = generateDisplayNameSuggestions(target * 3);
+    const normalizedCandidates = [...new Set(pool.map((name) => normalizeDisplayName(name)))];
+
+    const { data: activeLocks, error } = await getSupabaseAdminClient()
+      .from("ody_name_locks")
+      .select("normalized_display_name")
+      .in("normalized_display_name", normalizedCandidates);
+
+    if (error) {
+      return pool.slice(0, target);
+    }
+
+    const locked = new Set((activeLocks ?? []).map((item) => item.normalized_display_name));
+    const available = pool.filter((name) => !locked.has(normalizeDisplayName(name)));
+
+    if (available.length >= target) {
+      return available.slice(0, target);
+    }
+
+    return [...available, ...generateDisplayNameSuggestions(target)].slice(0, target);
+  }
+
+  private toGameSession(row: AuthorizedSessionRow): GameSession {
+    return gameSessionSchema.parse({
+      id: row.session_id,
+      playerId: row.player_id,
+      displayName: row.display_name,
+      chapterId: row.chapter_id,
+      currentNodeId: row.current_node_id,
+      status: row.status,
+      dayNight: row.day_night,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    });
   }
 
   private track(event: Omit<TelemetryEvent, "id" | "occurredAt">): void {
@@ -387,28 +587,13 @@ class InMemoryGameStore {
       ...event
     });
   }
-
-  private async withSessionLock<T>(fn: () => Promise<T>): Promise<T> {
-    const previous = this.sessionLock;
-    let release!: () => void;
-    this.sessionLock = new Promise((resolve) => {
-      release = resolve;
-    });
-
-    await previous;
-    try {
-      return await fn();
-    } finally {
-      release();
-    }
-  }
 }
 
 const globalForStore = globalThis as unknown as {
-  __odyssey_store?: InMemoryGameStore;
+  __odyssey_store?: SupabaseGameStore;
 };
 
-export const gameStore = globalForStore.__odyssey_store ?? new InMemoryGameStore();
+export const gameStore = globalForStore.__odyssey_store ?? new SupabaseGameStore();
 
 if (!globalForStore.__odyssey_store) {
   globalForStore.__odyssey_store = gameStore;

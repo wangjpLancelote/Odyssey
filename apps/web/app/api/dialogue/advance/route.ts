@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   try {
     const token = requireSessionToken(req);
     const body = await parseJson(req, advanceDialogueRequestSchema);
-    const result = gameStore.getNode(body.sessionId, token);
+    const result = await gameStore.getNode(body.sessionId, token);
     if (!result) {
       return NextResponse.json({ error: "session_not_found" }, { status: 404 });
     }

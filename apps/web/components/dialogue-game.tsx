@@ -79,9 +79,24 @@ export function DialogueGame() {
   }
 
   async function refreshNameSuggestions() {
-    const res = await fetch("/api/player/name/suggest?count=5");
-    const json = (await res.json()) as { suggestions: string[] };
-    setNameSuggestions(json.suggestions);
+    try {
+      const res = await fetch("/api/player/name/suggest?count=5");
+      const json = (await res.json()) as { suggestions?: string[] };
+      if (res.ok && json.suggestions) {
+        setNameSuggestions(json.suggestions);
+        return;
+      }
+    } catch {
+      // fall through
+    }
+
+    setNameSuggestions([
+      generateRandomDisplayName(),
+      generateRandomDisplayName(),
+      generateRandomDisplayName(),
+      generateRandomDisplayName(),
+      generateRandomDisplayName()
+    ]);
   }
 
   useEffect(() => {
