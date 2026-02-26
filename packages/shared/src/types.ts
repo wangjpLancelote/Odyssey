@@ -450,6 +450,16 @@ export const startSessionRequestSchema = z.object({
 });
 export type StartSessionRequest = z.infer<typeof startSessionRequestSchema>;
 
+export const recallSessionRequestSchema = z.object({
+  displayName: displayNameSchema
+});
+export type RecallSessionRequest = z.infer<typeof recallSessionRequestSchema>;
+
+export const recallSessionErrorSchema = z.object({
+  error: z.enum(["name_not_found", "no_active_session"])
+});
+export type RecallSessionError = z.infer<typeof recallSessionErrorSchema>;
+
 export const sessionTokenSchema = z.object({
   sessionToken: z.string().min(16)
 });

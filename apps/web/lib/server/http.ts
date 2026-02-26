@@ -33,10 +33,11 @@ export function apiError(error: unknown): NextResponse {
       error.message === "node_not_found" ||
       error.message === "next_node_not_found" ||
       error.message === "cutscene_not_found" ||
-      error.message === "chapter_not_found";
+      error.message === "chapter_not_found" ||
+      error.message === "name_not_found";
 
     const isUnauthorized = error.message === "session_token_required" || error.message === "unauthorized_session";
-    const isConflict = error.message === "name_conflict";
+    const isConflict = error.message === "name_conflict" || error.message === "no_active_session";
     const isServerError = error.message === "supabase_env_missing" || error.message === "supabase_query_failed";
 
     const status =

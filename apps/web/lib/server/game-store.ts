@@ -172,6 +172,111 @@ class SupabaseGameStore {
     }
   }
 
+  async recallSession(displayName: string): Promise<{
+    session: GameSession;
+    sessionToken: string;
+    node: DialogueNode;
+  }> {
+    const normalized = normalizeDisplayName(displayName);
+
+    const { data: playerRow, error: playerError } = await getSupabaseAdminClient()
+      .from("ody_players")
+      .select("id,display_name")
+      .eq("normalized_display_name", normalized)
+      .limit(1)
+      .maybeSingle();
+
+    if (playerError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    if (!playerRow) {
+      throw new Error("name_not_found");
+    }
+
+    const { data, error } = await getSupabaseAdminClient()
+      .from("ody_name_locks")
+      .select(
+        `
+        session_id,
+        ody_sessions!inner (
+          id, session_token, player_id, storyline_id, chapter_id,
+          current_node_id, current_branch_tag, day_night, status,
+          created_at, updated_at, expires_at
+        )
+      `
+      )
+      .eq("normalized_display_name", normalized)
+      .gt("expires_at", new Date().toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error("supabase_query_failed");
+    }
+
+    if (!data) {
+      throw new Error("no_active_session");
+    }
+
+    const sessionRow = Array.isArray(data.ody_sessions)
+      ? data.ody_sessions[0]
+      : (data.ody_sessions as Record<string, unknown>);
+
+    if (
+      !sessionRow ||
+      sessionRow.status !== "ACTIVE" ||
+      !sessionRow.expires_at ||
+      new Date(sessionRow.expires_at as string) <= new Date()
+    ) {
+      throw new Error("no_active_session");
+    }
+
+    const resolvedDisplayName = playerRow.display_name ?? displayName;
+
+    const newExpiry = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
+
+    await Promise.all([
+      getSupabaseAdminClient()
+        .from("ody_sessions")
+        .update({ expires_at: newExpiry, updated_at: new Date().toISOString() })
+        .eq("id", sessionRow.id as string),
+      getSupabaseAdminClient()
+        .from("ody_name_locks")
+        .update({ expires_at: newExpiry })
+        .eq("session_id", sessionRow.id as string)
+    ]);
+
+    const session = gameSessionSchema.parse({
+      id: sessionRow.id,
+      playerId: sessionRow.player_id,
+      displayName: resolvedDisplayName,
+      storylineId: sessionRow.storyline_id,
+      chapterId: sessionRow.chapter_id,
+      currentNodeId: sessionRow.current_node_id,
+      status: sessionRow.status,
+      dayNight: sessionRow.day_night,
+      createdAt: sessionRow.created_at,
+      updatedAt: sessionRow.updated_at
+    });
+
+    const bundle = await chapterResourceManager.loadChapterBundle(
+      sessionRow.storyline_id as string,
+      sessionRow.chapter_id as string
+    );
+    const node = bundle.nodes[sessionRow.current_node_id as string];
+
+    if (!node) {
+      throw new Error("node_not_found");
+    }
+
+    return {
+      session,
+      sessionToken: sessionRow.session_token as string,
+      node
+    };
+  }
+
   async commitChoice(
     sessionId: string,
     sessionToken: string,

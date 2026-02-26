@@ -1,17 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { ChapterTimeline, CompiledSceneTimeline } from "@odyssey/shared";
-import { NameGate } from "@/components/name-gate";
 import { DragonButton } from "@/components/ui-dragon";
 import { CutsceneCanvas } from "@/components/cutscene-canvas";
 import { GameTopbar } from "@/components/game-topbar";
-import { generateRandomDisplayName } from "@/lib/name-generator";
-import { getStoredDisplayName, setStoredDisplayName } from "@/lib/name-storage";
-import { validateDisplayName } from "@/lib/name-utils";
-
-const DEFAULT_STORYLINE_ID = "fire-dawn";
-const DEFAULT_CHAPTER_ID = "ch01";
+import { clearEntryReady, clearStoredSession, getStoredSession, setStoredSession } from "@/lib/session-storage";
 
 type SessionPayload = {
   session: {
@@ -73,17 +68,15 @@ type ChapterAssetsPayload = {
 };
 
 export function DialogueGame() {
-  const [displayName, setDisplayName] = useState("");
-  const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [nameSubmitting, setNameSubmitting] = useState(false);
+  const router = useRouter();
 
   const [data, setData] = useState<SessionPayload | null>(null);
+  const [booting, setBooting] = useState(true);
   const [footprint, setFootprint] = useState<FootprintPayload | null>(null);
   const [chapterTimeline, setChapterTimeline] = useState<ChapterTimeline | null>(null);
   const [sideQuestInfo, setSideQuestInfo] = useState<string>("尚未唤起支线回响");
   const [muted, setMuted] = useState(false);
-  const [statusText, setStatusText] = useState("旅程尚未开始");
+  const [statusText, setStatusText] = useState("旅程连接中...");
   const [timeline, setTimeline] = useState<CompiledSceneTimeline | null>(null);
   const [videoCueMap, setVideoCueMap] = useState<Record<string, { src: string; poster?: string; loop?: boolean }>>(
     {}
@@ -101,6 +94,17 @@ export function DialogueGame() {
     return matched ?? data.session.chapterId;
   }, [data, chapterTimeline]);
 
+  function syncStoredSession(payload: SessionPayload): void {
+    setStoredSession({
+      sessionId: payload.session.id,
+      sessionToken: payload.sessionToken,
+      playerId: payload.session.playerId,
+      displayName: payload.session.displayName,
+      storylineId: payload.session.storylineId,
+      chapterId: payload.session.chapterId
+    });
+  }
+
   function authHeaders(): HeadersInit {
     if (!data?.sessionToken) {
       return { "Content-Type": "application/json" };
@@ -112,40 +116,56 @@ export function DialogueGame() {
     };
   }
 
-  async function refreshNameSuggestions() {
-    try {
-      const res = await fetch("/api/player/name/suggest?count=5");
-      const json = (await res.json()) as { suggestions?: string[] };
-      if (res.ok && json.suggestions) {
-        setNameSuggestions(json.suggestions);
-        return;
-      }
-    } catch {
-      // fallback to local generator
-    }
-
-    setNameSuggestions([
-      generateRandomDisplayName(),
-      generateRandomDisplayName(),
-      generateRandomDisplayName(),
-      generateRandomDisplayName(),
-      generateRandomDisplayName()
-    ]);
+  function handleSessionExpired() {
+    clearStoredSession();
+    clearEntryReady();
+    setData(null);
+    setBooting(false);
+    router.replace("/?reason=session_required");
   }
 
   useEffect(() => {
-    const storedName = getStoredDisplayName();
-    const initial = storedName && !validateDisplayName(storedName) ? storedName : generateRandomDisplayName();
-    setDisplayName(initial);
-    setStoredDisplayName(initial);
-    void refreshNameSuggestions();
+    const stored = getStoredSession();
+    if (!stored) {
+      handleSessionExpired();
+      return;
+    }
+
+    void restoreSession(stored.sessionId, stored.sessionToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function restoreSession(sessionId: string, sessionToken: string) {
+    try {
+      const res = await fetch("/api/dialogue/advance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-token": sessionToken
+        },
+        body: JSON.stringify({ sessionId })
+      });
+
+      if (!res.ok) {
+        handleSessionExpired();
+        return;
+      }
+
+      const result = (await res.json()) as Omit<SessionPayload, "sessionToken">;
+      const payload: SessionPayload = { ...result, sessionToken };
+      setData(payload);
+      syncStoredSession(payload);
+      setStatusText("会话已恢复");
+      await Promise.all([loadTimeline(payload.session.storylineId), loadCutscene(payload)]);
+      setBooting(false);
+    } catch {
+      handleSessionExpired();
+    }
+  }
 
   async function loadTimeline(storylineId: string) {
     const res = await fetch(`/api/chapters/timeline?storylineId=${encodeURIComponent(storylineId)}`);
-    if (!res.ok) {
-      return;
-    }
+    if (!res.ok) return;
     const json = (await res.json()) as ChapterTimeline;
     setChapterTimeline(json);
   }
@@ -163,23 +183,16 @@ export function DialogueGame() {
       })
     });
 
-    if (!res.ok) {
-      return;
-    }
-
+    if (!res.ok) return;
     const json = (await res.json()) as { timeline: CompiledSceneTimeline };
     setTimeline(json.timeline);
   }
 
   const warmAssetUrls = useCallback((assets: ChapterAssetsPayload["criticalPreloadAssets"]) => {
-    if (typeof document === "undefined") {
-      return;
-    }
+    if (typeof document === "undefined") return;
 
     for (const asset of assets) {
-      if (warmedAssetUrlsRef.current.has(asset.url)) {
-        continue;
-      }
+      if (warmedAssetUrlsRef.current.has(asset.url)) continue;
 
       const link = document.createElement("link");
       link.rel = "preload";
@@ -204,10 +217,7 @@ export function DialogueGame() {
         }
       );
 
-      if (!res.ok) {
-        return;
-      }
-
+      if (!res.ok) return;
       const payload = (await res.json()) as ChapterAssetsPayload;
       setVideoCueMap(payload.timelineVideoCueMap ?? {});
       warmAssetUrls(payload.criticalPreloadAssets ?? []);
@@ -216,56 +226,9 @@ export function DialogueGame() {
   );
 
   useEffect(() => {
-    if (!data) {
-      return;
-    }
-
+    if (!data) return;
     void loadChapterAssets(data.session.storylineId, data.session.chapterId, data.sessionToken);
   }, [data, loadChapterAssets]);
-
-  async function startSession() {
-    const validationError = validateDisplayName(displayName);
-    if (validationError) {
-      setNameError(validationError);
-      return;
-    }
-
-    setNameSubmitting(true);
-    setNameError(null);
-
-    const res = await fetch("/api/session/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        displayName,
-        storylineId: DEFAULT_STORYLINE_ID,
-        chapterId: DEFAULT_CHAPTER_ID
-      })
-    });
-
-    const json = (await res.json()) as SessionPayload | { error: string; suggestions?: string[] };
-
-    if (!res.ok) {
-      if ("error" in json && json.error === "name_conflict") {
-        setNameError("这个名字已被另一位冒险者点亮，换一个更闪耀的吧。");
-        setNameSuggestions(json.suggestions ?? []);
-      } else {
-        setNameError("启程受阻，请稍后再试。");
-      }
-      setNameSubmitting(false);
-      return;
-    }
-
-    const payload = json as SessionPayload;
-    setStoredDisplayName(payload.session.displayName);
-    setDisplayName(payload.session.displayName);
-    setData(payload);
-    setStatusText(`启程成功，${payload.session.displayName}，前路已亮。 ✨`);
-    setFootprint(null);
-    setSideQuestInfo("尚未唤起支线回响");
-    await Promise.all([loadTimeline(payload.session.storylineId), loadCutscene(payload)]);
-    setNameSubmitting(false);
-  }
 
   async function refreshNode() {
     if (!data) return;
@@ -276,12 +239,14 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("你的旅程印记已淡去，请重新启程。");
+      handleSessionExpired();
       return;
     }
 
     const response = (await res.json()) as Omit<SessionPayload, "sessionToken">;
-    setData({ ...data, ...response });
+    const next = { ...data, ...response };
+    setData(next);
+    syncStoredSession(next);
   }
 
   async function commitChoice(choiceId: string) {
@@ -293,13 +258,14 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("你的旅程印记已淡去，请重新启程。");
+      handleSessionExpired();
       return;
     }
 
     const response = (await res.json()) as Omit<SessionPayload, "sessionToken">;
     const next = { ...data, ...response };
     setData(next);
+    syncStoredSession(next);
     setStatusText(
       response.session.chapterId === data.session.chapterId
         ? `抉择已刻入命运：${choiceId}。`
@@ -317,7 +283,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("你的旅程印记已淡去，请重新启程。");
+      handleSessionExpired();
       return;
     }
 
@@ -333,13 +299,14 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("你的旅程印记已淡去，请重新启程。");
+      handleSessionExpired();
       return;
     }
 
     const response = (await res.json()) as RestorePayload;
     const next = { ...data, ...response };
     setData(next);
+    syncStoredSession(next);
 
     if (response.resourceReloadedChapter) {
       setStatusText(`你沿足迹回到 ${checkpointId}，并重返 ${response.resourceReloadedChapter}。`);
@@ -366,7 +333,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("你的旅程印记已淡去，请重新启程。");
+      handleSessionExpired();
       return;
     }
 
@@ -378,6 +345,7 @@ export function DialogueGame() {
     const response = (await res.json()) as RestorePayload;
     const next = { ...data, ...response };
     setData(next);
+    syncStoredSession(next);
     setStatusText(`你已踏入新幕：${response.session.chapterId}。`);
     await loadCutscene(next);
   }
@@ -391,7 +359,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("你的旅程印记已淡去，请重新启程。");
+      handleSessionExpired();
       return;
     }
 
@@ -413,7 +381,7 @@ export function DialogueGame() {
     });
 
     if (res.status === 401) {
-      setStatusText("你的旅程印记已淡去，请重新启程。");
+      handleSessionExpired();
       return;
     }
 
@@ -426,49 +394,27 @@ export function DialogueGame() {
       }
     };
     setData(next);
+    syncStoredSession(next);
     await loadCutscene(next);
   }
 
-  function pickRandomName() {
-    const name = generateRandomDisplayName();
-    setDisplayName(name);
-    setStoredDisplayName(name);
-    setNameError(null);
-  }
-
-  function pickSuggestedName(name: string) {
-    setDisplayName(name);
-    setStoredDisplayName(name);
-    setNameError(null);
+  if (booting || !data) {
+    return (
+      <main>
+        <div className="shell">
+          <section className="card">
+            <h1 style={{ marginTop: 0 }}>正在连接你的旅程...</h1>
+            <p className="small">如果会话不存在，将自动返回首页。</p>
+          </section>
+        </div>
+      </main>
+    );
   }
 
   return (
     <main>
       <GameTopbar visible={Boolean(data)} chapterTitle={currentChapterTitle} />
       <div className="shell">
-        {!data ? (
-          <NameGate
-            displayName={displayName}
-            suggestions={nameSuggestions}
-            error={nameError}
-            loading={nameSubmitting}
-            onDisplayNameChange={(value) => {
-              setDisplayName(value);
-              setStoredDisplayName(value);
-              setNameError(null);
-            }}
-            onRandomLocal={pickRandomName}
-            onRefreshSuggestions={() => {
-              setNameError(null);
-              void refreshNameSuggestions();
-            }}
-            onPickSuggestion={pickSuggestedName}
-            onSubmit={() => {
-              void startSession();
-            }}
-          />
-        ) : null}
-
         <div className="row">
           <h1>火之晨曦：少年冒险篇 ⚔️</h1>
           <span className="tag">{dayNightClass}</span>
@@ -484,49 +430,45 @@ export function DialogueGame() {
             </div>
 
             <div className="small" style={{ marginTop: "var(--ody-space-md)" }}>
-              同行者：{data?.session.displayName ?? "尚未入场"}
+              同行者：{data.session.displayName}
             </div>
             <div className="small" style={{ marginTop: "var(--ody-space-xs)" }}>
-              所在篇章：{data ? `${data.session.storylineId} / ${data.session.chapterId}` : "尚未入场"}
+              所在篇章：{`${data.session.storylineId} / ${data.session.chapterId}`}
             </div>
 
             <div className="row" style={{ marginTop: "var(--ody-space-md)" }}>
-              <DragonButton variant="secondary" onClick={refreshNode} disabled={!data}>
+              <DragonButton variant="secondary" onClick={refreshNode}>
                 聆听下一句
               </DragonButton>
-              <DragonButton variant="secondary" onClick={refreshDayNight} disabled={!data}>
+              <DragonButton variant="secondary" onClick={refreshDayNight}>
                 校准昼夜
               </DragonButton>
-              <DragonButton onClick={enterNextChapter} disabled={!data || !chapterTimeline}>
+              <DragonButton onClick={enterNextChapter} disabled={!chapterTimeline}>
                 迈向下一幕
               </DragonButton>
             </div>
 
-            {data ? (
-              <>
-                <hr />
-                <div className="small">场景节点：{data.node.id}</div>
-                <p>
-                  <strong>{data.node.speaker}：</strong>
-                  {data.node.content}
-                </p>
-                <div className="choices">
-                  {data.node.choices.map((choice) => (
-                    <DragonButton
-                      key={choice.id}
-                      variant="outline"
-                      className="choice-btn"
-                      onClick={() => {
-                        void commitChoice(choice.id);
-                      }}
-                    >
-                      {choice.label}
-                    </DragonButton>
-                  ))}
-                  {data.node.choices.length === 0 ? <div className="small">这一刻尚无可走的分岔路。</div> : null}
-                </div>
-              </>
-            ) : null}
+            <hr />
+            <div className="small">场景节点：{data.node.id}</div>
+            <p>
+              <strong>{data.node.speaker}：</strong>
+              {data.node.content}
+            </p>
+            <div className="choices">
+              {data.node.choices.map((choice) => (
+                <DragonButton
+                  key={choice.id}
+                  variant="outline"
+                  className="choice-btn"
+                  onClick={() => {
+                    void commitChoice(choice.id);
+                  }}
+                >
+                  {choice.label}
+                </DragonButton>
+              ))}
+              {data.node.choices.length === 0 ? <div className="small">这一刻尚无可走的分岔路。</div> : null}
+            </div>
           </section>
 
           <aside className="card">
@@ -537,7 +479,6 @@ export function DialogueGame() {
                 onClick={() => {
                   void loadFootprint();
                 }}
-                disabled={!data}
               >
                 展开足迹
               </DragonButton>
@@ -546,7 +487,6 @@ export function DialogueGame() {
                 onClick={() => {
                   void triggerSideQuest();
                 }}
-                disabled={!data}
               >
                 唤起支线
               </DragonButton>

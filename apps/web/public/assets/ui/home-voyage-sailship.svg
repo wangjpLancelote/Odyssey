@@ -1,0 +1,75 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sea" x1="800" y1="520" x2="800" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D3958" stop-opacity="0.84"/>
+      <stop offset="1" stop-color="#0E1B2E" stop-opacity="0.98"/>
+    </linearGradient>
+    <linearGradient id="mist" x1="800" y1="0" x2="800" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7CB2E8" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#3E5F86" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sail" x1="790" y1="330" x2="790" y2="610" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF3D9" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#D9BF8B" stop-opacity="0.72"/>
+    </linearGradient>
+    <radialGradient id="moon" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(360 180) rotate(90) scale(120 120)">
+      <stop stop-color="#DFEEFF" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#DFEEFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="transparent"/>
+  <rect y="430" width="1600" height="470" fill="url(#sea)"/>
+  <rect y="0" width="1600" height="520" fill="url(#mist)"/>
+  <circle cx="360" cy="180" r="120" fill="url(#moon)"/>
+
+  <!-- Main front wave with morphing animation -->
+  <path fill="#10253B" fill-opacity="0.44">
+    <animate attributeName="d" dur="6s" repeatCount="indefinite" values="
+      M0 590C180 560 310 580 470 608C620 634 790 642 920 622C1080 598 1240 552 1600 574V900H0V590Z;
+      M0 596C180 570 320 586 480 612C630 630 800 636 930 618C1090 592 1230 558 1600 580V900H0V596Z;
+      M0 584C170 558 300 576 460 604C610 638 780 648 910 626C1070 602 1250 548 1600 568V900H0V584Z;
+      M0 590C180 560 310 580 470 608C620 634 790 642 920 622C1080 598 1240 552 1600 574V900H0V590Z
+    "/>
+  </path>
+
+  <!-- Ship group with rocking and bobbing -->
+  <g opacity="0.96">
+    <animateTransform attributeName="transform" type="rotate" values="0 800 620; 1.3 800 620; 0 800 620; -1.1 800 620; 0 800 620" dur="7s" repeatCount="indefinite" calcMode="spline" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"/>
+    <animateTransform attributeName="transform" type="translate" values="0 0; 1 -4; 0 0; -1 3; 0 0" dur="5.5s" repeatCount="indefinite" additive="sum" calcMode="spline" keySplines="0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1; 0.45 0 0.55 1"/>
+
+    <rect x="796" y="338" width="8" height="302" rx="4" fill="#5C4631"/>
+    <path d="M800 350L654 510L800 510V350Z" fill="url(#sail)"/>
+    <path d="M804 372L952 548L804 548V372Z" fill="url(#sail)"/>
+    <path d="M640 604H972L912 648H704L640 604Z" fill="#3A2B1F"/>
+    <path d="M690 590H920L874 622H736L690 590Z" fill="#5A4330"/>
+    <path d="M760 336L850 336L804 304L760 336Z" fill="#E0C999" fill-opacity="0.82"/>
+    <path d="M640 604H972" stroke="#E6D2A6" stroke-opacity="0.36" stroke-width="2"/>
+  </g>
+
+  <!-- Wave reflection lines with animated sway -->
+  <path stroke="#C6DCF5" stroke-opacity="0.26" stroke-width="4" stroke-linecap="round">
+    <animate attributeName="d" dur="5s" repeatCount="indefinite" values="
+      M600 672C740 700 860 704 1010 676;
+      M590 676C730 696 870 700 1020 672;
+      M610 668C750 704 850 708 1000 680;
+      M600 672C740 700 860 704 1010 676
+    "/>
+  </path>
+  <path stroke="#8DB8DF" stroke-opacity="0.18" stroke-width="3" stroke-linecap="round">
+    <animate attributeName="d" dur="7s" repeatCount="indefinite" values="
+      M500 710C690 736 930 742 1140 710;
+      M510 714C700 732 940 738 1130 714;
+      M490 706C680 740 920 746 1150 706;
+      M500 710C690 736 930 742 1140 710
+    "/>
+  </path>
+  <path stroke="#7CA7D2" stroke-opacity="0.14" stroke-width="3" stroke-linecap="round">
+    <animate attributeName="d" dur="9s" repeatCount="indefinite" values="
+      M380 750C650 782 980 786 1240 748;
+      M390 754C660 778 990 782 1230 752;
+      M370 746C640 786 970 790 1250 744;
+      M380 750C650 782 980 786 1240 748
+    "/>
+  </path>
+</svg>

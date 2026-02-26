@@ -3,12 +3,65 @@
 ## 2026-02-26
 
 ### Added
+- 首页帆船背景资源：`apps/web/public/assets/ui/home-voyage-sailship.svg`（远航主题）。
+- 新增首页与路由重构：
+  - `/` 首页四入口主菜单
+  - `/new-story` 新故事开局页
+  - `/memories` 旧忆恢复页
+  - `/game` 正式游戏页
+  - `/changelog` 更新日志页
+  - `/version` 版本信息页
+- 新增路由守卫中间件：`apps/web/middleware.ts`，未完成开局/恢复不可进入 `/game`。
+- 新增会话门禁 cookie 工具：`ody_entry_ready`（`markEntryReady` / `clearEntryReady`）。
 - 章节资产 API：`GET /api/chapters/assets`，返回章节资源清单、关键预加载资源、`timelineVideoCueMap`。
 - 统一资产解析器：`apps/web/lib/asset-resolver.ts`，支持 `ASSET_MODE=local|r2` 与旧路径兼容映射。
 - 资源目录骨架：`apps/web/public/assets/fire-dawn/ch01|ch02/...`，按 `storyline/chapter/type` 分层。
 - 资产解析测试：`apps/web/lib/asset-resolver.test.ts`。
 
 ### Changed
+- 引入并落地 Tailwind CSS v4 页面层改造：
+  - `apps/web/app/page.tsx` 重写为 Tailwind utility 结构（首页主视觉、帆船背景、右侧骑士菜单）。
+  - `apps/web/app/layout.tsx` 使用 Tailwind utility 设置全局 `body` 外观与字体。
+  - `apps/web/app/changelog/page.tsx` 与 `apps/web/app/version/page.tsx` 改为 Tailwind utility 布局与卡片样式。
+- 首页菜单布局微调：
+  - 菜单改为绝对定位贴右，不再占用中间主画面区域
+  - 菜单背景透明度降低，减弱对主画面的遮挡
+  - 菜单项纵向间距进一步增大
+- 首页结构继续优化：
+  - 去除首页中部黑色大卡片容器（保留文字）
+  - 标题与副标题移至整体画面上方居中
+  - 帆船前景显著放大并上移，确保首屏可见
+  - 右侧悬挂菜单下移，避免遮挡上方文案
+- 首页骑士菜单交互回调：
+  - 取消按钮 hover 的大幅晃动关键帧
+  - 恢复为轻微上浮高亮（无旋转）
+- 首页骑士菜单交互优化：
+  - 四入口纵向间隔增大（桌面与移动端均拉开）
+  - hover 晃动幅度增大，加入更明显的摆动关键帧动画
+- 首页右侧悬挂菜单改为写实骑士风材质：
+  - 菜单面板加入钢铁渐变、皮革挂带、铆钉细节与金属高光
+  - 入口按钮加入徽章符号（⚜）与写实阴影层
+  - 保留原有入口 emoji（⚔️/🛡️/📜/👑）
+- 首页菜单形态改为“魔兽争霸式右侧悬挂”：
+  - 四入口挂载到右侧竖向菜单
+  - 增加悬挂链条装饰
+  - 增加轻微“风吹摆动”动画（含 `prefers-reduced-motion` 降级）
+  - 移动端自动回退为居中稳定竖排
+- 首页四入口按钮升级为骑士风视觉：
+  - 每个按钮增加 emoji 主图标（⚔️/🛡️/📜/👑）
+  - 增加副标题铭文（骑士试炼/封印档案/军团战报/王国纪元）
+  - 增加纹章网格、金属描边与徽记装饰元素
+- 首页视觉重构：
+  - 四入口由宫格改为竖向入口栈（中央对齐）
+  - 标题与副标题改为中央英雄区排版
+  - 首页背景增加帆船远航主题多层背景（暗幕/海雾/帆船）
+  - 移动端保持竖排并下沉背景图位置，避免压标题
+- `DialogueGame` 重构为纯游戏运行态组件，不再承担首页命名/回忆入口职责。
+- `POST /api/session/recall` 错误语义细分：
+  - `404 name_not_found`
+  - `409 no_active_session`
+- `gameStore.recallSession` 改为两段式查询：先判定玩家名存在，再查询活跃会话并恢复当前进度。
+- `packages/shared/src/types.ts` 增加 `recallSessionErrorSchema`。
 - README 移除 API 详细列表，改为仅保留接口目录说明（`apps/web/app/api`）。
 - 共享类型升级：`packages/shared/src/types.ts`
   - `audioBus` 增加 `ambient`
