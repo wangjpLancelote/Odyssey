@@ -6,7 +6,7 @@ import { apiError, parseJson } from "@/lib/server/http";
 export async function POST(req: Request) {
   try {
     const body = await parseJson(req, startSessionRequestSchema);
-    const result = await gameStore.startSession(body.displayName);
+    const result = await gameStore.startSession(body.displayName, body.storylineId, body.chapterId);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof NameConflictError) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { CompiledSceneTimeline } from "@odyssey/shared";
+import type { ChapterTimeline, CompiledSceneTimeline } from "@odyssey/shared";
 import { NameGate } from "@/components/name-gate";
 import { Button } from "@/components/ui/button";
 import { CutsceneCanvas } from "@/components/cutscene-canvas";
@@ -9,11 +9,15 @@ import { generateRandomDisplayName } from "@/lib/name-generator";
 import { getStoredDisplayName, setStoredDisplayName } from "@/lib/name-storage";
 import { validateDisplayName } from "@/lib/name-utils";
 
+const DEFAULT_STORYLINE_ID = "fire-dawn";
+const DEFAULT_CHAPTER_ID = "ch01";
+
 type SessionPayload = {
   session: {
     id: string;
     playerId: string;
     displayName: string;
+    storylineId: string;
     chapterId: string;
     currentNodeId: string;
     dayNight: "DAY" | "NIGHT";
@@ -30,6 +34,7 @@ type SessionPayload = {
       id: string;
       label: string;
       nextNodeId: string;
+      nextChapterId?: string;
       branchTag?: string;
     }>;
   };
@@ -39,15 +44,16 @@ type FootprintPayload = {
   sessionId: string;
   checkpoints: Array<{
     checkpointId: string;
+    storylineId: string;
+    chapterId: string;
     nodeId: string;
     createdAt: string;
   }>;
 };
 
-const DEFAULT_CUTSCENE = {
-  cutsceneId: "cutscene-cassell-arrival",
-  sceneId: "scene-campus-gate"
-} as const;
+type RestorePayload = Omit<SessionPayload, "sessionToken"> & {
+  resourceReloadedChapter?: string | null;
+};
 
 export function DialogueGame() {
   const [displayName, setDisplayName] = useState("");
@@ -57,6 +63,7 @@ export function DialogueGame() {
 
   const [data, setData] = useState<SessionPayload | null>(null);
   const [footprint, setFootprint] = useState<FootprintPayload | null>(null);
+  const [chapterTimeline, setChapterTimeline] = useState<ChapterTimeline | null>(null);
   const [sideQuestInfo, setSideQuestInfo] = useState<string>("-");
   const [muted, setMuted] = useState(false);
   const [statusText, setStatusText] = useState("尚未开始");
@@ -87,7 +94,7 @@ export function DialogueGame() {
         return;
       }
     } catch {
-      // fall through
+      // fallback to local generator
     }
 
     setNameSuggestions([
@@ -107,7 +114,16 @@ export function DialogueGame() {
     void refreshNameSuggestions();
   }, []);
 
-  async function loadCutscene(session: SessionPayload) {
+  async function loadTimeline(storylineId: string) {
+    const res = await fetch(`/api/chapters/timeline?storylineId=${encodeURIComponent(storylineId)}`);
+    if (!res.ok) {
+      return;
+    }
+    const json = (await res.json()) as ChapterTimeline;
+    setChapterTimeline(json);
+  }
+
+  async function loadCutscene(session: SessionPayload, cutsceneId?: string) {
     const res = await fetch("/api/cutscene/play", {
       method: "POST",
       headers: {
@@ -116,10 +132,13 @@ export function DialogueGame() {
       },
       body: JSON.stringify({
         sessionId: session.session.id,
-        cutsceneId: DEFAULT_CUTSCENE.cutsceneId,
-        sceneId: DEFAULT_CUTSCENE.sceneId
+        cutsceneId
       })
     });
+
+    if (!res.ok) {
+      return;
+    }
 
     const json = (await res.json()) as { timeline: CompiledSceneTimeline };
     setTimeline(json.timeline);
@@ -138,7 +157,11 @@ export function DialogueGame() {
     const res = await fetch("/api/session/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName, chapterSlug: "cassell-intro" })
+      body: JSON.stringify({
+        displayName,
+        storylineId: DEFAULT_STORYLINE_ID,
+        chapterId: DEFAULT_CHAPTER_ID
+      })
     });
 
     const json = (await res.json()) as SessionPayload | { error: string; suggestions?: string[] };
@@ -161,7 +184,7 @@ export function DialogueGame() {
     setStatusText(`会话已开始：${payload.session.displayName}`);
     setFootprint(null);
     setSideQuestInfo("-");
-    await loadCutscene(payload);
+    await Promise.all([loadTimeline(payload.session.storylineId), loadCutscene(payload)]);
     setNameSubmitting(false);
   }
 
@@ -198,7 +221,12 @@ export function DialogueGame() {
     const response = (await res.json()) as Omit<SessionPayload, "sessionToken">;
     const next = { ...data, ...response };
     setData(next);
-    setStatusText(`已选择 ${choiceId}`);
+    setStatusText(
+      response.session.chapterId === data.session.chapterId
+        ? `已选择 ${choiceId}`
+        : `已进入新章节 ${response.session.chapterId}`
+    );
+    await loadCutscene(next);
   }
 
   async function loadFootprint() {
@@ -230,9 +258,49 @@ export function DialogueGame() {
       return;
     }
 
-    const response = (await res.json()) as Omit<SessionPayload, "sessionToken">;
-    setData({ ...data, ...response });
+    const response = (await res.json()) as RestorePayload;
+    const next = { ...data, ...response };
+    setData(next);
+
+    if (response.resourceReloadedChapter) {
+      setStatusText(`已恢复到 ${checkpointId}，切换到章节 ${response.resourceReloadedChapter}`);
+      await loadCutscene(next);
+      return;
+    }
+
     setStatusText(`已恢复到 ${checkpointId}`);
+  }
+
+  async function enterNextChapter() {
+    if (!data || !chapterTimeline) return;
+
+    const current = chapterTimeline.chapters.find((item) => item.id === data.session.chapterId);
+    if (!current?.nextId) {
+      setStatusText("当前章节已无下一章");
+      return;
+    }
+
+    const res = await fetch("/api/chapters/enter", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ sessionId: data.session.id, toChapterId: current.nextId })
+    });
+
+    if (res.status === 401) {
+      setStatusText("会话已失效，请重新进入");
+      return;
+    }
+
+    if (!res.ok) {
+      setStatusText("章节切换失败");
+      return;
+    }
+
+    const response = (await res.json()) as RestorePayload;
+    const next = { ...data, ...response };
+    setData(next);
+    setStatusText(`已进入章节 ${response.session.chapterId}`);
+    await loadCutscene(next);
   }
 
   async function triggerSideQuest() {
@@ -336,6 +404,9 @@ export function DialogueGame() {
             <div className="small" style={{ marginTop: 10 }}>
               当前姓名：{data?.session.displayName ?? "未进入"}
             </div>
+            <div className="small" style={{ marginTop: 4 }}>
+              当前章节：{data ? `${data.session.storylineId} / ${data.session.chapterId}` : "未进入"}
+            </div>
 
             <div className="row" style={{ marginTop: 10 }}>
               <Button onClick={refreshNode} disabled={!data}>
@@ -343,6 +414,9 @@ export function DialogueGame() {
               </Button>
               <Button onClick={refreshDayNight} disabled={!data}>
                 刷新昼夜
+              </Button>
+              <Button onClick={enterNextChapter} disabled={!data || !chapterTimeline}>
+                进入下一章
               </Button>
             </div>
 
@@ -399,6 +473,17 @@ export function DialogueGame() {
 
             <hr style={{ margin: "14px 0", borderColor: "#2f3550" }} />
 
+            <div className="small">章节时间线</div>
+            <div className="small" style={{ marginTop: 8 }}>
+              {chapterTimeline
+                ? chapterTimeline.chapters
+                    .map((item) => `${item.id}${item.enabled ? "" : "(disabled)"}`)
+                    .join(" -> ")
+                : "未加载"}
+            </div>
+
+            <hr style={{ margin: "14px 0", borderColor: "#2f3550" }} />
+
             <div className="small">足迹检查点（仅当前会话可见）</div>
             <div className="choices" style={{ marginTop: 8 }}>
               {footprint?.checkpoints?.map((cp) => (
@@ -408,7 +493,7 @@ export function DialogueGame() {
                     void restore(cp.checkpointId);
                   }}
                 >
-                  {cp.checkpointId} {"->"} {cp.nodeId}
+                  {cp.checkpointId} {"->"} {cp.chapterId}:{cp.nodeId}
                 </Button>
               ))}
               {!footprint ? <div className="small">尚未加载</div> : null}

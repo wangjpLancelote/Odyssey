@@ -1,0 +1,15 @@
+{
+  "storylineId": "fire-dawn",
+  "chapterId": "ch01",
+  "slug": "fire-dawn-ch01",
+  "title": "第一幕 卡塞尔之门",
+  "startNodeId": "fd-ch01-node-01",
+  "cutscenes": [
+    {
+      "cutsceneId": "fire-dawn-ch01-cutscene-01",
+      "sceneId": "fd-ch01-scene-street",
+      "planFile": "chapter-cutscene-01.json"
+    }
+  ],
+  "scenes": ["fd-ch01-scene-street", "fd-ch01-scene-porch", "fd-ch01-scene-belltower"]
+}

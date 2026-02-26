@@ -1,0 +1,38 @@
+{
+  "moduleId": "fd-ch02-m02-conflict",
+  "motions": [
+    {
+      "id": "ui-bubble",
+      "kind": "ui",
+      "target": "bubble.nono",
+      "atMs": 620,
+      "durationMs": 530,
+      "priority": 2,
+      "ease": "power2.out",
+      "from": { "alpha": 0, "y": 22 },
+      "to": { "alpha": 1, "y": 0 }
+    },
+    {
+      "id": "fx-shock",
+      "kind": "effect",
+      "target": "fx.speedline",
+      "atMs": 1160,
+      "durationMs": 320,
+      "priority": 3,
+      "ease": "power1.out",
+      "from": { "alpha": 0 },
+      "to": { "alpha": 0.86 }
+    }
+  ],
+  "audios": [
+    {
+      "id": "sfx-shock",
+      "bus": "sfx",
+      "src": "/audio/fire-dawn/ch02/sfx-shock.mp3",
+      "volume": 0.82,
+      "fadeInMs": 0,
+      "fadeOutMs": 180,
+      "atMs": 1160
+    }
+  ]
+}

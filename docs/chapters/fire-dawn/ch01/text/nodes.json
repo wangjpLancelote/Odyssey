@@ -1,0 +1,30 @@
+[
+  {
+    "id": "fd-ch01-node-01",
+    "sceneId": "fd-ch01-scene-street",
+    "speaker": "旁白",
+    "content": "晨雾尚未散去，火光先一步沿着破碎墙面爬升。",
+    "checkpoint": true
+  },
+  {
+    "id": "fd-ch01-node-02",
+    "sceneId": "fd-ch01-scene-porch",
+    "speaker": "楚子航",
+    "content": "如果你现在后退，就永远不会知道门后有什么。",
+    "checkpoint": false
+  },
+  {
+    "id": "fd-ch01-node-03",
+    "sceneId": "fd-ch01-scene-porch",
+    "speaker": "路明非",
+    "content": "我可以逃，但那样连自己都不会原谅。",
+    "checkpoint": false
+  },
+  {
+    "id": "fd-ch01-node-04",
+    "sceneId": "fd-ch01-scene-belltower",
+    "speaker": "旁白",
+    "content": "钟楼的第一声回响落下，第一章在火线边缘收束。",
+    "checkpoint": true
+  }
+]

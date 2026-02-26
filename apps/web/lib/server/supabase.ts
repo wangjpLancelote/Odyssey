@@ -8,8 +8,9 @@ function loadRootEnvFallback(): void {
   const missing = !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!missing) return;
 
-  const rootEnvPath = path.resolve(process.cwd(), "../../.env");
-  if (!existsSync(rootEnvPath)) return;
+  const candidatePaths = [path.resolve(process.cwd(), ".env"), path.resolve(process.cwd(), "../../.env")];
+  const rootEnvPath = candidatePaths.find((candidatePath) => existsSync(candidatePath));
+  if (!rootEnvPath) return;
 
   const content = readFileSync(rootEnvPath, "utf8");
   for (const line of content.split("\n")) {

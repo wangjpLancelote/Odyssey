@@ -1,0 +1,38 @@
+[
+  {
+    "id": "fd-ch01-choice-01",
+    "nodeId": "fd-ch01-node-01",
+    "label": "跟上火光",
+    "nextNodeId": "fd-ch01-node-02",
+    "branchTag": "follow_flame"
+  },
+  {
+    "id": "fd-ch01-choice-02",
+    "nodeId": "fd-ch01-node-01",
+    "label": "先确认退路",
+    "nextNodeId": "fd-ch01-node-03",
+    "branchTag": "secure_escape"
+  },
+  {
+    "id": "fd-ch01-choice-03",
+    "nodeId": "fd-ch01-node-02",
+    "label": "进入钟楼",
+    "nextNodeId": "fd-ch01-node-04",
+    "branchTag": "enter_tower"
+  },
+  {
+    "id": "fd-ch01-choice-04",
+    "nodeId": "fd-ch01-node-03",
+    "label": "跨过残墙",
+    "nextNodeId": "fd-ch01-node-04",
+    "branchTag": "cross_ruins"
+  },
+  {
+    "id": "fd-ch01-choice-05",
+    "nodeId": "fd-ch01-node-04",
+    "label": "迈入下一段火线",
+    "nextNodeId": "fd-ch02-node-01",
+    "nextChapterId": "ch02",
+    "branchTag": "chapter_shift"
+  }
+]

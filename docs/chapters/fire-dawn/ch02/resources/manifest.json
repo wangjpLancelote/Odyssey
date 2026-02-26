@@ -1,0 +1,14 @@
+{
+  "images": [
+    "/images/fire-dawn/ch02/bg-corridor.png",
+    "/images/fire-dawn/ch02/bg-generator.png",
+    "/images/fire-dawn/ch02/bg-altar.png"
+  ],
+  "audios": [
+    "/audio/fire-dawn/ch02/bgm-ash.mp3",
+    "/audio/fire-dawn/ch02/sfx-shock.mp3"
+  ],
+  "sprites": [
+    "/sprites/fire-dawn/ch02/shockwave.png"
+  ]
+}

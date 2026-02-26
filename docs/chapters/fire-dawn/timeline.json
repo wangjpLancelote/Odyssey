@@ -1,0 +1,21 @@
+{
+  "storylineId": "fire-dawn",
+  "chapters": [
+    {
+      "id": "ch01",
+      "order": 1,
+      "prevId": null,
+      "nextId": "ch02",
+      "enabled": true,
+      "title": "第一幕 卡塞尔之门"
+    },
+    {
+      "id": "ch02",
+      "order": 2,
+      "prevId": "ch01",
+      "nextId": null,
+      "enabled": true,
+      "title": "第二幕 黄金瞳"
+    }
+  ]
+}

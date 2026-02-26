@@ -1,0 +1,27 @@
+{
+  "moduleId": "fd-ch02-m01-open",
+  "motions": [
+    {
+      "id": "cam-open",
+      "kind": "camera",
+      "target": "camera.main",
+      "atMs": 0,
+      "durationMs": 1250,
+      "priority": 1,
+      "ease": "power2.out",
+      "from": { "x": -28, "scale": 1.18, "alpha": 0.46 },
+      "to": { "x": 0, "scale": 1, "alpha": 1 }
+    }
+  ],
+  "audios": [
+    {
+      "id": "bgm-ash",
+      "bus": "bgm",
+      "src": "/audio/fire-dawn/ch02/bgm-ash.mp3",
+      "volume": 0.5,
+      "fadeInMs": 700,
+      "fadeOutMs": 0,
+      "atMs": 0
+    }
+  ]
+}

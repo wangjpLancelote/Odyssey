@@ -1,0 +1,27 @@
+{
+  "moduleId": "fd-ch01-m01-open",
+  "motions": [
+    {
+      "id": "cam-open",
+      "kind": "camera",
+      "target": "camera.main",
+      "atMs": 0,
+      "durationMs": 1100,
+      "priority": 1,
+      "ease": "power2.out",
+      "from": { "x": -24, "scale": 1.15, "alpha": 0.5 },
+      "to": { "x": 0, "scale": 1, "alpha": 1 }
+    }
+  ],
+  "audios": [
+    {
+      "id": "bgm-morning",
+      "bus": "bgm",
+      "src": "/audio/fire-dawn/ch01/bgm-morning.mp3",
+      "volume": 0.52,
+      "fadeInMs": 600,
+      "fadeOutMs": 0,
+      "atMs": 0
+    }
+  ]
+}

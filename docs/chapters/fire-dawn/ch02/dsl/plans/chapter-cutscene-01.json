@@ -1,0 +1,29 @@
+{
+  "dslVersion": "1",
+  "sceneId": "fd-ch02-scene-corridor",
+  "cutsceneId": "fire-dawn-ch02-cutscene-01",
+  "instances": [
+    {
+      "instanceId": "fd-ch02-inst-open",
+      "moduleId": "fd-ch02-m01-open",
+      "offsetMs": 0,
+      "overrides": []
+    },
+    {
+      "instanceId": "fd-ch02-inst-conflict-day",
+      "moduleId": "fd-ch02-m02-conflict",
+      "offsetMs": 0,
+      "when": { "dayNight": "DAY" },
+      "overrides": []
+    },
+    {
+      "instanceId": "fd-ch02-inst-conflict-night",
+      "moduleId": "fd-ch02-m02-conflict",
+      "offsetMs": 0,
+      "when": { "dayNight": "NIGHT" },
+      "overrides": [
+        { "atomId": "fx-shock", "field": "to.alpha", "value": 0.92 }
+      ]
+    }
+  ]
+}

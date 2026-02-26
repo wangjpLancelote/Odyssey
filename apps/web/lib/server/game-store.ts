@@ -1,15 +1,9 @@
 import { MockLlmAdapter, generateSideQuest } from "@odyssey/ai";
 import { telemetryEventNames } from "@odyssey/analytics";
-import {
-  buildPlotEdge,
-  cassellIntroChapter,
-  cassellIntroNodes,
-  defaultBloodlineState,
-  defaultRank,
-  defaultWordSpirits
-} from "@odyssey/domain";
+import { buildPlotEdge, defaultBloodlineState, defaultRank, defaultWordSpirits } from "@odyssey/domain";
 import {
   gameSessionSchema,
+  type ChapterTimeline,
   type DialogueChoice,
   type DialogueNode,
   type FootprintMap,
@@ -21,10 +15,12 @@ import {
 import { detectDayNightBySystemTime } from "@/lib/day-night";
 import { generateDisplayNameSuggestions } from "@/lib/name-generator";
 import { normalizeDisplayName, sanitizeDisplayName, validateDisplayName } from "@/lib/name-utils";
-import { cutsceneDslManifest } from "@/lib/cutscene-specs";
+import { chapterResourceManager } from "@/lib/server/chapter-resource-manager";
 import { getSupabaseAdminClient } from "@/lib/server/supabase";
 
 const SESSION_TTL_SECONDS = 60 * 60 * 6;
+const DEFAULT_STORYLINE_ID = "fire-dawn";
+const DEFAULT_CHAPTER_ID = "ch01";
 
 export class NameConflictError extends Error {
   readonly suggestions: string[];
@@ -40,6 +36,7 @@ type StartSessionRow = {
   session_token: string | null;
   player_id: string | null;
   display_name: string | null;
+  storyline_id: string | null;
   chapter_id: string | null;
   current_node_id: string | null;
   day_night: "DAY" | "NIGHT" | null;
@@ -54,6 +51,7 @@ type AuthorizedSessionRow = {
   session_token: string;
   player_id: string;
   display_name: string;
+  storyline_id: string;
   chapter_id: string;
   current_node_id: string;
   current_branch_tag: string | null;
@@ -65,6 +63,8 @@ type AuthorizedSessionRow = {
 
 type FootprintCheckpointRow = {
   checkpoint_id: string;
+  storyline_id: string;
+  chapter_id: string;
   node_id: string;
   plot_cursor: number;
   metadata: Record<string, unknown>;
@@ -81,7 +81,11 @@ class SupabaseGameStore {
     voiceLineMaxLength: 120
   };
 
-  async startSession(displayName: string): Promise<{
+  async startSession(
+    displayName: string,
+    storylineId = DEFAULT_STORYLINE_ID,
+    chapterId = DEFAULT_CHAPTER_ID
+  ): Promise<{
     session: GameSession;
     sessionToken: string;
     node: DialogueNode;
@@ -91,13 +95,17 @@ class SupabaseGameStore {
       throw new Error("invalid_display_name");
     }
 
+    await chapterResourceManager.assertStartableChapter(storylineId, chapterId);
+    const chapterBundle = await chapterResourceManager.loadChapterBundle(storylineId, chapterId);
+
     const sanitizedDisplayName = sanitizeDisplayName(displayName);
     const dayNight = detectDayNightBySystemTime();
 
     const { data, error } = await getSupabaseAdminClient().rpc("ody_start_session", {
       p_display_name: sanitizedDisplayName,
-      p_chapter_id: cassellIntroChapter.id,
-      p_start_node_id: cassellIntroChapter.startNodeId,
+      p_storyline_id: storylineId,
+      p_chapter_id: chapterId,
+      p_start_node_id: chapterBundle.meta.startNodeId,
       p_day_night: dayNight,
       p_session_ttl_seconds: SESSION_TTL_SECONDS
     });
@@ -119,6 +127,7 @@ class SupabaseGameStore {
       id: row.session_id,
       playerId: row.player_id,
       displayName: row.display_name,
+      storylineId: row.storyline_id,
       chapterId: row.chapter_id,
       currentNodeId: row.current_node_id,
       status: row.status,
@@ -126,6 +135,11 @@ class SupabaseGameStore {
       createdAt: row.created_at,
       updatedAt: row.updated_at
     });
+
+    const node = chapterBundle.nodes[session.currentNodeId];
+    if (!node) {
+      throw new Error("node_not_found");
+    }
 
     this.track({
       name: telemetryEventNames.dialogueAdvanced,
@@ -137,7 +151,7 @@ class SupabaseGameStore {
     return {
       session,
       sessionToken: row.session_token,
-      node: cassellIntroNodes[session.currentNodeId]
+      node
     };
   }
 
@@ -148,7 +162,8 @@ class SupabaseGameStore {
     try {
       const row = await this.ensureAuthorizedSession(sessionId, sessionToken);
       const session = this.toGameSession(row);
-      return { session, node: cassellIntroNodes[session.currentNodeId] };
+      const node = await this.resolveSessionNode(row);
+      return { session, node };
     } catch (error) {
       if (error instanceof Error && error.message === "session_not_found") {
         return null;
@@ -163,14 +178,34 @@ class SupabaseGameStore {
     choiceId: string
   ): Promise<{ session: GameSession; node: DialogueNode }> {
     const authorized = await this.ensureAuthorizedSession(sessionId, sessionToken);
-    const currentNode = cassellIntroNodes[authorized.current_node_id];
-    const choice = currentNode.choices.find((item) => item.id === choiceId);
+    const currentBundle = await chapterResourceManager.loadChapterBundle(
+      authorized.storyline_id,
+      authorized.chapter_id
+    );
+    const currentNode = currentBundle.nodes[authorized.current_node_id];
 
+    if (!currentNode) {
+      throw new Error("node_not_found");
+    }
+
+    const choice = currentNode.choices.find((item) => item.id === choiceId);
     if (!choice) {
       throw new Error("choice_not_found");
     }
 
-    const nextNode = cassellIntroNodes[choice.nextNodeId];
+    const targetChapterId = choice.nextChapterId ?? authorized.chapter_id;
+
+    if (targetChapterId !== authorized.chapter_id) {
+      await chapterResourceManager.assertCanEnterNext(
+        authorized.storyline_id,
+        authorized.chapter_id,
+        targetChapterId
+      );
+    }
+
+    const targetBundle = await chapterResourceManager.loadChapterBundle(authorized.storyline_id, targetChapterId);
+    const nextNode = targetBundle.nodes[choice.nextNodeId];
+
     if (!nextNode) {
       throw new Error("next_node_not_found");
     }
@@ -227,6 +262,8 @@ class SupabaseGameStore {
         .insert({
           checkpoint_id: checkpointId,
           session_id: sessionId,
+          storyline_id: authorized.storyline_id,
+          chapter_id: targetChapterId,
           node_id: nextNode.id,
           plot_cursor: plotEdgeCount ?? 0,
           metadata: {
@@ -242,7 +279,7 @@ class SupabaseGameStore {
         name: telemetryEventNames.checkpointCreated,
         playerId: authorized.player_id,
         sessionId,
-        attributes: { nodeId: nextNode.id }
+        attributes: { nodeId: nextNode.id, chapterId: targetChapterId }
       });
     }
 
@@ -250,6 +287,7 @@ class SupabaseGameStore {
     const { error: updateError } = await getSupabaseAdminClient()
       .from("ody_sessions")
       .update({
+        chapter_id: targetChapterId,
         current_node_id: nextNode.id,
         current_branch_tag: choice.branchTag ?? null,
         day_night: dayNight,
@@ -271,7 +309,8 @@ class SupabaseGameStore {
       attributes: {
         choiceId,
         fromNodeId: currentNode.id,
-        toNodeId: nextNode.id
+        toNodeId: nextNode.id,
+        toChapterId: targetChapterId
       }
     });
 
@@ -281,9 +320,109 @@ class SupabaseGameStore {
     };
   }
 
+  async enterChapter(
+    sessionId: string,
+    sessionToken: string,
+    toChapterId: string
+  ): Promise<{ session: GameSession; node: DialogueNode; resourceReloadedChapter: string | null }> {
+    const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
+
+    if (toChapterId === runtime.chapter_id) {
+      throw new Error("chapter_transition_not_allowed");
+    }
+
+    await chapterResourceManager.assertCanEnterNext(runtime.storyline_id, runtime.chapter_id, toChapterId);
+    const targetBundle = await chapterResourceManager.loadChapterBundle(runtime.storyline_id, toChapterId);
+    const startNode = targetBundle.nodes[targetBundle.meta.startNodeId];
+
+    if (!startNode) {
+      throw new Error("chapter_start_node_not_found");
+    }
+
+    const dayNight = detectDayNightBySystemTime();
+    const { error: updateError } = await getSupabaseAdminClient()
+      .from("ody_sessions")
+      .update({
+        chapter_id: toChapterId,
+        current_node_id: startNode.id,
+        current_branch_tag: null,
+        day_night: dayNight,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", sessionId)
+      .eq("session_token", sessionToken);
+
+    if (updateError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const { error: visitedError } = await getSupabaseAdminClient().from("ody_visited_nodes").upsert(
+      {
+        session_id: sessionId,
+        node_id: startNode.id
+      },
+      { onConflict: "session_id,node_id" }
+    );
+
+    if (visitedError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const { count: checkpointCount, error: checkpointCountError } = await getSupabaseAdminClient()
+      .from("ody_footprint_checkpoints")
+      .select("checkpoint_id", { head: true, count: "exact" })
+      .eq("session_id", sessionId);
+
+    if (checkpointCountError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const checkpointId = `cp-${sessionId}-${(checkpointCount ?? 0) + 1}`;
+
+    const { count: plotEdgeCount, error: plotEdgeCountError } = await getSupabaseAdminClient()
+      .from("ody_plot_edges")
+      .select("id", { head: true, count: "exact" })
+      .eq("session_id", sessionId);
+
+    if (plotEdgeCountError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const { error: checkpointError } = await getSupabaseAdminClient().from("ody_footprint_checkpoints").insert({
+      checkpoint_id: checkpointId,
+      session_id: sessionId,
+      storyline_id: runtime.storyline_id,
+      chapter_id: toChapterId,
+      node_id: startNode.id,
+      plot_cursor: plotEdgeCount ?? 0,
+      metadata: {
+        reason: "chapter_enter"
+      }
+    });
+
+    if (checkpointError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const refreshed = await this.ensureAuthorizedSession(sessionId, sessionToken);
+
+    return {
+      session: this.toGameSession(refreshed),
+      node: startNode,
+      resourceReloadedChapter: toChapterId
+    };
+  }
+
   async listChoices(sessionId: string, sessionToken: string): Promise<DialogueChoice[]> {
     const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
-    return cassellIntroNodes[runtime.current_node_id].choices;
+    const bundle = await chapterResourceManager.loadChapterBundle(runtime.storyline_id, runtime.chapter_id);
+    const node = bundle.nodes[runtime.current_node_id];
+
+    if (!node) {
+      throw new Error("node_not_found");
+    }
+
+    return node.choices;
   }
 
   async footprintMap(sessionId: string, sessionToken: string): Promise<FootprintMap> {
@@ -291,7 +430,7 @@ class SupabaseGameStore {
 
     const { data: checkpoints, error: checkpointError } = await getSupabaseAdminClient()
       .from("ody_footprint_checkpoints")
-      .select("checkpoint_id,node_id,plot_cursor,metadata,created_at")
+      .select("checkpoint_id,storyline_id,chapter_id,node_id,plot_cursor,metadata,created_at")
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
 
@@ -315,6 +454,8 @@ class SupabaseGameStore {
       checkpoints: (checkpoints as FootprintCheckpointRow[]).map((row) => ({
         checkpointId: row.checkpoint_id,
         sessionId,
+        storylineId: row.storyline_id,
+        chapterId: row.chapter_id,
         nodeId: row.node_id,
         plotCursor: String(row.plot_cursor),
         metadata: row.metadata ?? {},
@@ -328,12 +469,12 @@ class SupabaseGameStore {
     sessionId: string,
     sessionToken: string,
     checkpointId: string
-  ): Promise<{ session: GameSession; node: DialogueNode }> {
+  ): Promise<{ session: GameSession; node: DialogueNode; resourceReloadedChapter: string | null }> {
     const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
 
     const { data: checkpoint, error: checkpointError } = await getSupabaseAdminClient()
       .from("ody_footprint_checkpoints")
-      .select("checkpoint_id,node_id,plot_cursor")
+      .select("checkpoint_id,storyline_id,chapter_id,node_id,plot_cursor")
       .eq("session_id", sessionId)
       .eq("checkpoint_id", checkpointId)
       .maybeSingle();
@@ -371,6 +512,8 @@ class SupabaseGameStore {
     const { error: updateError } = await getSupabaseAdminClient()
       .from("ody_sessions")
       .update({
+        storyline_id: checkpoint.storyline_id,
+        chapter_id: checkpoint.chapter_id,
         current_node_id: checkpoint.node_id,
         day_night: detectDayNightBySystemTime(),
         updated_at: new Date().toISOString()
@@ -383,17 +526,33 @@ class SupabaseGameStore {
     }
 
     const refreshed = await this.ensureAuthorizedSession(sessionId, sessionToken);
+    const bundle = await chapterResourceManager.loadChapterBundle(checkpoint.storyline_id, checkpoint.chapter_id);
+    const node = bundle.nodes[checkpoint.node_id];
+
+    if (!node) {
+      throw new Error("node_not_found");
+    }
+
+    const resourceReloadedChapter =
+      runtime.storyline_id !== checkpoint.storyline_id || runtime.chapter_id !== checkpoint.chapter_id
+        ? checkpoint.chapter_id
+        : null;
 
     this.track({
       name: telemetryEventNames.footprintRestored,
       playerId: runtime.player_id,
       sessionId,
-      attributes: { checkpointId }
+      attributes: {
+        checkpointId,
+        fromChapterId: runtime.chapter_id,
+        toChapterId: checkpoint.chapter_id
+      }
     });
 
     return {
       session: this.toGameSession(refreshed),
-      node: cassellIntroNodes[checkpoint.node_id]
+      node,
+      resourceReloadedChapter
     };
   }
 
@@ -476,22 +635,34 @@ class SupabaseGameStore {
   async getCutsceneContext(
     sessionId: string,
     sessionToken: string,
-    cutsceneId: keyof typeof cutsceneDslManifest
+    cutsceneId?: string
   ): Promise<{
-    cutsceneId: keyof typeof cutsceneDslManifest;
+    storylineId: string;
+    chapterId: string;
+    cutsceneId: string;
     sceneId: string;
     dayNight: "DAY" | "NIGHT";
     branchTag?: string;
   }> {
     const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
-    const manifest = cutsceneDslManifest[cutsceneId];
+    const cutscene = await chapterResourceManager.resolveCutsceneMeta(
+      runtime.storyline_id,
+      runtime.chapter_id,
+      cutsceneId
+    );
 
     return {
-      cutsceneId,
-      sceneId: manifest.sceneId,
+      storylineId: runtime.storyline_id,
+      chapterId: runtime.chapter_id,
+      cutsceneId: cutscene.cutsceneId,
+      sceneId: cutscene.sceneId,
       dayNight: runtime.day_night,
       branchTag: runtime.current_branch_tag ?? undefined
     };
+  }
+
+  async getChapterTimeline(storylineId: string): Promise<ChapterTimeline> {
+    return chapterResourceManager.getTimeline(storylineId);
   }
 
   async suggestDisplayNames(count: number): Promise<string[]> {
@@ -571,6 +742,7 @@ class SupabaseGameStore {
       id: row.session_id,
       playerId: row.player_id,
       displayName: row.display_name,
+      storylineId: row.storyline_id,
       chapterId: row.chapter_id,
       currentNodeId: row.current_node_id,
       status: row.status,
@@ -578,6 +750,17 @@ class SupabaseGameStore {
       createdAt: row.created_at,
       updatedAt: row.updated_at
     });
+  }
+
+  private async resolveSessionNode(row: AuthorizedSessionRow): Promise<DialogueNode> {
+    const bundle = await chapterResourceManager.loadChapterBundle(row.storyline_id, row.chapter_id);
+    const node = bundle.nodes[row.current_node_id];
+
+    if (!node) {
+      throw new Error("node_not_found");
+    }
+
+    return node;
   }
 
   private track(event: Omit<TelemetryEvent, "id" | "occurredAt">): void {

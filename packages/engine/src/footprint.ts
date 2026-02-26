@@ -21,11 +21,15 @@ export function addCheckpoint(
   map: FootprintMap,
   nodeId: string,
   plotCursor: string,
-  metadata: Record<string, unknown> = {}
+  metadata: Record<string, unknown> = {},
+  storylineId = "fire-dawn",
+  chapterId = "ch01"
 ): FootprintMap {
   const checkpoint: FootprintCheckpoint = {
     checkpointId: `cp-${map.sessionId}-${map.checkpoints.length + 1}`,
     sessionId: map.sessionId,
+    storylineId,
+    chapterId,
     nodeId,
     plotCursor,
     metadata,

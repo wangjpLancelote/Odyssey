@@ -26,20 +26,29 @@ export function apiError(error: unknown): NextResponse {
   }
 
   if (error instanceof Error) {
-    const status =
+    const isNotFound =
       error.message === "session_not_found" ||
       error.message === "choice_not_found" ||
-      error.message === "checkpoint_not_found"
+      error.message === "checkpoint_not_found" ||
+      error.message === "node_not_found" ||
+      error.message === "next_node_not_found" ||
+      error.message === "cutscene_not_found" ||
+      error.message === "chapter_not_found";
+
+    const isUnauthorized = error.message === "session_token_required" || error.message === "unauthorized_session";
+    const isConflict = error.message === "name_conflict";
+    const isServerError = error.message === "supabase_env_missing" || error.message === "supabase_query_failed";
+
+    const status =
+      isNotFound
         ? 404
-        : error.message === "session_token_required" || error.message === "unauthorized_session"
+        : isUnauthorized
           ? 401
-          : error.message === "name_conflict"
+          : isConflict
             ? 409
-            : error.message === "supabase_env_missing"
-              ? 500
-              : error.message === "supabase_query_failed"
+            : isServerError
                 ? 503
-            : 400;
+                : 400;
 
     return NextResponse.json({ error: error.message }, { status });
   }

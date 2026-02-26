@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { playCutsceneRequestSchema } from "@odyssey/shared";
 import { loadCompiledTimeline } from "@/lib/server/storyboard-repository";
-import { cutsceneDslManifest } from "@/lib/cutscene-specs";
 import { gameStore } from "@/lib/server/game-store";
 import { apiError, parseJson, requireSessionToken } from "@/lib/server/http";
 
@@ -9,23 +8,20 @@ export async function POST(req: Request) {
   try {
     const token = requireSessionToken(req);
     const body = await parseJson(req, playCutsceneRequestSchema);
-    if (!(body.cutsceneId in cutsceneDslManifest)) {
-      return NextResponse.json({ error: "unsupported_cutscene" }, { status: 400 });
-    }
-    const cutsceneId = body.cutsceneId as keyof typeof cutsceneDslManifest;
-
-    const context = await gameStore.getCutsceneContext(body.sessionId, token, cutsceneId);
+    const context = await gameStore.getCutsceneContext(body.sessionId, token, body.cutsceneId);
 
     const timeline = await loadCompiledTimeline({
+      storylineId: context.storylineId,
+      chapterId: context.chapterId,
       cutsceneId: context.cutsceneId,
       dayNight: context.dayNight,
       branchTag: context.branchTag
     });
 
     return NextResponse.json({
-      cutsceneId: context.cutsceneId,
-      sceneId: context.sceneId,
-      timeline
+      cutsceneId: timeline.cutsceneId,
+      sceneId: timeline.sceneId,
+      timeline: timeline.timeline
     });
   } catch (error) {
     return apiError(error);

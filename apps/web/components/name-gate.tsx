@@ -31,7 +31,7 @@ export function NameGate({
   return (
     <section className="name-gate card">
       <h2 style={{ marginTop: 0 }}>命名入场</h2>
-      <p className="small">先取一个名字再进入卡塞尔入学线。名字支持随机生成和自定义。</p>
+      <p className="small">先取一个名字再进入《火之晨曦》主线。名字支持随机生成和自定义。</p>
 
       <div className="row" style={{ marginTop: 12 }}>
         <input

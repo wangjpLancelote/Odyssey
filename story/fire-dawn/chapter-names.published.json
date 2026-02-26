@@ -1,0 +1,93 @@
+{
+  "storylineId": "fire-dawn",
+  "bookTitle": "龙族I：火之晨曦",
+  "baseline": "published",
+  "language": "zh-CN",
+  "retrievedAt": "2026-02-26",
+  "chapters": [
+    {
+      "id": "prologue",
+      "order": 1,
+      "kind": "PROLOGUE",
+      "fullTitle": "序章 白帝城",
+      "label": "白帝城"
+    },
+    {
+      "id": "act-01",
+      "order": 2,
+      "kind": "ACT",
+      "fullTitle": "第一幕 卡塞尔之门",
+      "label": "卡塞尔之门"
+    },
+    {
+      "id": "act-02",
+      "order": 3,
+      "kind": "ACT",
+      "fullTitle": "第二幕 黄金瞳",
+      "label": "黄金瞳"
+    },
+    {
+      "id": "act-03",
+      "order": 4,
+      "kind": "ACT",
+      "fullTitle": "第三幕 言灵",
+      "label": "言灵"
+    },
+    {
+      "id": "act-04",
+      "order": 5,
+      "kind": "ACT",
+      "fullTitle": "第四幕 星空",
+      "label": "星空"
+    },
+    {
+      "id": "act-05",
+      "order": 6,
+      "kind": "ACT",
+      "fullTitle": "第五幕 龙影",
+      "label": "龙影"
+    },
+    {
+      "id": "act-06",
+      "order": 7,
+      "kind": "ACT",
+      "fullTitle": "第六幕 风与潮之夜",
+      "label": "风与潮之夜"
+    },
+    {
+      "id": "act-07",
+      "order": 8,
+      "kind": "ACT",
+      "fullTitle": "第七幕 审判",
+      "label": "审判"
+    },
+    {
+      "id": "act-08",
+      "order": 9,
+      "kind": "ACT",
+      "fullTitle": "第八幕 诸神黄昏",
+      "label": "诸神黄昏"
+    },
+    {
+      "id": "act-09",
+      "order": 10,
+      "kind": "ACT",
+      "fullTitle": "第九幕 龙血之梦",
+      "label": "龙血之梦"
+    },
+    {
+      "id": "act-10",
+      "order": 11,
+      "kind": "ACT",
+      "fullTitle": "第十幕 远古战歌",
+      "label": "远古战歌"
+    },
+    {
+      "id": "epilogue",
+      "order": 12,
+      "kind": "EPILOGUE",
+      "fullTitle": "尾声 归来的路明非",
+      "label": "归来的路明非"
+    }
+  ]
+}

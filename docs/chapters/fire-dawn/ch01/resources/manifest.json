@@ -1,0 +1,14 @@
+{
+  "images": [
+    "/images/fire-dawn/ch01/bg-street.png",
+    "/images/fire-dawn/ch01/bg-porch.png",
+    "/images/fire-dawn/ch01/bg-belltower.png"
+  ],
+  "audios": [
+    "/audio/fire-dawn/ch01/bgm-morning.mp3",
+    "/audio/fire-dawn/ch01/sfx-impact.mp3"
+  ],
+  "sprites": [
+    "/sprites/fire-dawn/ch01/speedline.png"
+  ]
+}

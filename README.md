@@ -12,8 +12,33 @@
 - 足迹系统：玩家私有足迹图与检查点回放。
 - 过场系统：PixiJS + GSAP + Howler.js。
 - 场景 DSL：低嵌套 JSON DSL（模块 + 编排）编译为运行时时间线。
+- 章节内容系统：按故事线/章节拆分目录，`dsl/text/schema` 物理隔离。
 - 昼夜系统：按系统时间切换 DAY/NIGHT。
 - 数据持久化：Supabase（会话、名字锁、足迹、剧情边、支线状态）。
+
+## 世界观基石
+
+主题摘要：
+- 孤独：角色始终处于高压与理解缺失的状态。
+- 自我选择：每次推进都需要主动承担代价。
+- 宿命选择：选择存在，但边界与后果受世界规则约束。
+
+规则摘要：
+- 世界规则优先级高于 AI 支线创作结果。
+- 等级/血统/言灵三系统共同约束能力上限。
+- 主线章节顺序固定，支线不可改写主线骨架。
+
+快速入口：
+- [世界观总览](./docs/world/README.md)
+- [三支柱主题](./docs/world/pillars.md)
+- [世界规则](./docs/world/world-rules.md)
+- [等级系统](./docs/world/systems-rank.md)
+- [血统系统](./docs/world/systems-bloodline.md)
+- [言灵系统](./docs/world/systems-word-spirit.md)
+- [组织与角色关系](./docs/world/factions-and-roles.md)
+- [火之晨曦 MVP 时间线](./docs/world/timeline-fire-dawn-mvp.md)
+- [AI 约束配置](./docs/world/ai-constraint-profile.md)
+- [术语表](./docs/world/glossary.md)
 
 ## 技术栈
 
@@ -41,12 +66,31 @@
 │  └─ scene-dsl/                # 分镜 DSL 编译器（模块+时间线）
 ├─ docs/
 │  ├─ architecture.md           # 架构说明
-│  ├─ narrative-bible.md        # 世界观约束
+│  ├─ narrative-bible.md        # 兼容入口（迁移到 docs/world）
 │  ├─ supabase-setup.md         # Supabase 初始化说明
-│  └─ storyboard/               # 分镜文档与 DSL JSON 数据
+│  ├─ world/                    # 世界观基石文档
+│  │  ├─ README.md
+│  │  ├─ pillars.md
+│  │  ├─ world-rules.md
+│  │  ├─ systems-rank.md
+│  │  ├─ systems-bloodline.md
+│  │  ├─ systems-word-spirit.md
+│  │  ├─ factions-and-roles.md
+│  │  ├─ timeline-fire-dawn-mvp.md
+│  │  ├─ ai-constraint-profile.md
+│  │  ├─ glossary.md
+│  │  └─ change-log.md
+│  ├─ chapters/                 # 章节化内容系统（storyline/chapter）
+│  │  └─ fire-dawn/
+│  │     ├─ storyline.md
+│  │     ├─ timeline.json
+│  │     ├─ ch01/
+│  │     └─ ch02/
+│  └─ storyboard/               # 旧版分镜目录（兼容保留）
 ├─ supabase/
 │  └─ migrations/
-│     └─ 20260226_odyssey_mvp.sql
+│     ├─ 20260226_odyssey_mvp.sql
+│     └─ 20260226_odyssey_chapter_timeline.sql
 └─ prisma/
    └─ schema.prisma             # 未来 Prisma 扩展模型（当前主存储为 Supabase）
 ```
@@ -67,11 +111,13 @@ SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
 执行 Supabase migration SQL：
 
 - `supabase/migrations/20260226_odyssey_mvp.sql`
+- `supabase/migrations/20260226_odyssey_chapter_timeline.sql`
 
 该迁移会创建：
 - 匿名玩家与会话表
 - 名字锁表（重名校验）
 - 足迹/检查点/剧情边/支线状态表
+- 章节时间线表与章节顺序校验函数
 - `ody_start_session`、`ody_authorize_session` 等函数
 
 ## 启动方式
@@ -123,9 +169,13 @@ bun run build:web     # Next 构建
 - `POST /api/sidequest/trigger`
 - `GET /api/daynight/current`
 - `POST /api/cutscene/play`
+- `GET /api/chapters/timeline`
+- `POST /api/chapters/enter`
 
 ## 注意事项
 
 - 当前为 MVP，未接入登录注册。
 - `sessionToken` 丢失后需重新开局。
 - 名字唯一性按“活跃会话”约束，过期会自动释放。
+- 资源按章节懒加载：默认仅当前章节加载，跨章回溯时才切换加载目标章资源。
+- 世界观规则优先于 AI 支线生成；命中冲突时必须执行安全回退。

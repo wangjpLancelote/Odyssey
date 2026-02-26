@@ -1,0 +1,29 @@
+{
+  "dslVersion": "1",
+  "sceneId": "fd-ch01-scene-street",
+  "cutsceneId": "fire-dawn-ch01-cutscene-01",
+  "instances": [
+    {
+      "instanceId": "fd-ch01-inst-open",
+      "moduleId": "fd-ch01-m01-open",
+      "offsetMs": 0,
+      "overrides": []
+    },
+    {
+      "instanceId": "fd-ch01-inst-dialogue-day",
+      "moduleId": "fd-ch01-m02-dialogue",
+      "offsetMs": 0,
+      "when": { "dayNight": "DAY" },
+      "overrides": []
+    },
+    {
+      "instanceId": "fd-ch01-inst-dialogue-night",
+      "moduleId": "fd-ch01-m02-dialogue",
+      "offsetMs": 0,
+      "when": { "dayNight": "NIGHT" },
+      "overrides": [
+        { "atomId": "ui-bubble", "field": "to.alpha", "value": 0.9 }
+      ]
+    }
+  ]
+}

@@ -23,6 +23,7 @@ export const dialogueChoiceSchema = z.object({
   id: z.string(),
   label: z.string(),
   nextNodeId: z.string(),
+  nextChapterId: z.string().optional(),
   branchTag: z.string().optional()
 });
 export type DialogueChoice = z.infer<typeof dialogueChoiceSchema>;
@@ -58,6 +59,8 @@ export type PlotEdge = z.infer<typeof plotEdgeSchema>;
 export const footprintCheckpointSchema = z.object({
   checkpointId: z.string(),
   sessionId: z.string(),
+  storylineId: z.string(),
+  chapterId: z.string(),
   nodeId: z.string(),
   plotCursor: z.string(),
   createdAt: z.string(),
@@ -208,6 +211,47 @@ export const compiledSceneTimelineSchema = z.object({
 });
 export type CompiledSceneTimeline = z.infer<typeof compiledSceneTimelineSchema>;
 
+export const chapterTimelineItemSchema = z.object({
+  id: z.string(),
+  order: z.number().int().positive(),
+  prevId: z.string().nullable(),
+  nextId: z.string().nullable(),
+  enabled: z.boolean(),
+  title: z.string()
+});
+export type ChapterTimelineItem = z.infer<typeof chapterTimelineItemSchema>;
+
+export const chapterTimelineSchema = z.object({
+  storylineId: z.string(),
+  chapters: z.array(chapterTimelineItemSchema)
+});
+export type ChapterTimeline = z.infer<typeof chapterTimelineSchema>;
+
+export const chapterCutsceneMetaSchema = z.object({
+  cutsceneId: z.string(),
+  sceneId: z.string(),
+  planFile: z.string()
+});
+export type ChapterCutsceneMeta = z.infer<typeof chapterCutsceneMetaSchema>;
+
+export const chapterResourceManifestSchema = z.object({
+  images: z.array(z.string()).default([]),
+  audios: z.array(z.string()).default([]),
+  sprites: z.array(z.string()).default([])
+});
+export type ChapterResourceManifest = z.infer<typeof chapterResourceManifestSchema>;
+
+export const chapterMetaSchema = z.object({
+  storylineId: z.string(),
+  chapterId: z.string(),
+  slug: z.string(),
+  title: z.string(),
+  startNodeId: z.string(),
+  cutscenes: z.array(chapterCutsceneMetaSchema),
+  scenes: z.array(z.string())
+});
+export type ChapterMeta = z.infer<typeof chapterMetaSchema>;
+
 export const displayNameSchema = z
   .string()
   .trim()
@@ -218,7 +262,8 @@ export type DisplayName = z.infer<typeof displayNameSchema>;
 
 export const startSessionRequestSchema = z.object({
   displayName: displayNameSchema,
-  chapterSlug: z.string().default("cassell-intro")
+  storylineId: z.string().default("fire-dawn"),
+  chapterId: z.string().default("ch01")
 });
 export type StartSessionRequest = z.infer<typeof startSessionRequestSchema>;
 
@@ -255,6 +300,13 @@ export const restoreFootprintRequestSchema = z.object({
 });
 export type RestoreFootprintRequest = z.infer<typeof restoreFootprintRequestSchema>;
 
+export const restoreFootprintResponseSchema = z.object({
+  session: z.any(),
+  node: z.any(),
+  resourceReloadedChapter: z.string().nullable().optional()
+});
+export type RestoreFootprintResponse = z.infer<typeof restoreFootprintResponseSchema>;
+
 export const triggerSideQuestRequestSchema = z.object({
   sessionId: z.string(),
   nodeId: z.string()
@@ -263,10 +315,21 @@ export type TriggerSideQuestRequest = z.infer<typeof triggerSideQuestRequestSche
 
 export const playCutsceneRequestSchema = z.object({
   sessionId: z.string(),
-  cutsceneId: z.string(),
-  sceneId: z.string()
+  cutsceneId: z.string().optional(),
+  sceneId: z.string().optional()
 });
 export type PlayCutsceneRequest = z.infer<typeof playCutsceneRequestSchema>;
+
+export const chapterEnterRequestSchema = z.object({
+  sessionId: z.string(),
+  toChapterId: z.string()
+});
+export type ChapterEnterRequest = z.infer<typeof chapterEnterRequestSchema>;
+
+export const chapterTimelineRequestSchema = z.object({
+  storylineId: z.string().default("fire-dawn")
+});
+export type ChapterTimelineRequest = z.infer<typeof chapterTimelineRequestSchema>;
 
 export const sideQuestMachineInputSchema = z.object({
   sessionId: z.string(),
@@ -327,6 +390,7 @@ export const gameSessionSchema = z.object({
   id: z.string(),
   playerId: z.string(),
   displayName: displayNameSchema,
+  storylineId: z.string(),
   chapterId: z.string(),
   currentNodeId: z.string(),
   status: z.enum(["ACTIVE", "PAUSED", "FINISHED"]),
