@@ -17,9 +17,9 @@
 ## 能力系统
 - **言灵（Word Spirit / Lingen）**：龙裔继承自龙族的超自然能力，通过龙文激活。
 - **龙文（Dragon Script）**：龙族古老文字，承载言灵与龙族知识。
-- **君焰（Sovereign Flame）**：路明非的言灵，Tier 9 火系，威力极大代价极高。
-- **镰鼬（Kamaitachi）**：源稚生的言灵，Tier 6 风系，风刃与感知增幅。
-- **雷切（Raikiri）**：凯撒的言灵，Tier 7 雷系，高速雷电斩击。
+- **君焰（Sovereign Flame）**：楚子航的言灵，Tier 9 火系，威力极大代价极高。
+- **镰鼬（Kamaitachi）**：凯撒的言灵，Tier 6 风系，风刃与感知增幅。
+- **雷切（Raikiri）**：楚子航的言灵，Tier 7 雷系，高速雷电斩击。
 - **时间零（Time Zero）**：昂热的言灵，Tier 10 禁忌级，局部时间操控。
 - **风压（Wind Pressure）**：Tier 4 通用风系言灵。
 - **魂言·空（Soul Word: Void）**：Tier 5 精神系言灵。
