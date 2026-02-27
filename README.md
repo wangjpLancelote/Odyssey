@@ -53,6 +53,7 @@
 ## 变更记录
 
 - 项目级开发变更：[`changelog.md`](./changelog.md)
+- 更新规则：[`docs/changelog-policy.md`](./docs/changelog-policy.md)
 - 世界观文档变更：[`docs/world/change-log.md`](./docs/world/change-log.md)
 
 ## 目录结构
@@ -73,9 +74,10 @@
 │  ├─ realtime/                 # 实时事件协议
 │  ├─ analytics/                # 埋点事件定义
 │  └─ scene-dsl/                # 分镜 DSL 编译器（模块+时间线）
-├─ changelog.md                 # 项目级变更日志（每次改动同步更新）
+├─ changelog.md                 # 项目级变更日志（仅新模块/新Feature/Bug修复更新）
 ├─ docs/
 │  ├─ architecture.md           # 架构说明
+│  ├─ changelog-policy.md       # changelog 更新策略
 │  ├─ narrative-bible.md        # 兼容入口（迁移到 docs/world）
 │  ├─ supabase-setup.md         # Supabase 初始化说明
 │  ├─ world/                    # 世界观基石文档
