@@ -1,0 +1,14 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch02",
+  "actId": "act-03",
+  "title": "终幕·祭台收束",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": ["fd-ch02-node-04"]
+    }
+  ],
+  "style": "hero_bright"
+}

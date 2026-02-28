@@ -5,6 +5,7 @@ import { ChapterRegistry, ChapterTimelineError } from "@odyssey/domain";
 import { compileSceneTimeline } from "@odyssey/scene-dsl";
 import {
   chapterMetaSchema,
+  chapterIntroPanelsSchema,
   chapterResourceManifestSchema,
   chapterTimelineSchema,
   compileContextSchema,
@@ -13,6 +14,7 @@ import {
   sceneStoryboardPlanSchema,
   storyboardModuleSchema,
   type ChapterCutsceneMeta,
+  type ChapterIntroPanels,
   type ChapterMeta,
   type ChapterResourceManifest,
   type ChapterTimeline,
@@ -160,6 +162,7 @@ function buildCriticalPreloadAssets(params: {
 export class ChapterResourceManager {
   private readonly registryCache = new Map<string, Promise<ChapterRegistry>>();
   private readonly bundleCache = new Map<string, Promise<ChapterBundle>>();
+  private readonly introCache = new Map<string, Promise<ChapterIntroPanels | null>>();
 
   async getRegistry(storylineId: string): Promise<ChapterRegistry> {
     const cached = this.registryCache.get(storylineId);
@@ -193,6 +196,22 @@ export class ChapterResourceManager {
       assetManifest: bundle.assetManifest,
       criticalPreloadAssets: bundle.criticalPreloadAssets
     };
+  }
+
+  async getChapterIntro(storylineId: string, chapterId: string): Promise<ChapterIntroPanels | null> {
+    const cacheKey = `${storylineId}:${chapterId}`;
+    const cached = this.introCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const loader = this.loadChapterIntroInternal(storylineId, chapterId).catch((error) => {
+      this.introCache.delete(cacheKey);
+      throw error;
+    });
+
+    this.introCache.set(cacheKey, loader);
+    return loader;
   }
 
   async assertStartableChapter(storylineId: string, chapterId: string): Promise<void> {
@@ -312,6 +331,16 @@ export class ChapterResourceManager {
     const timelineRaw = await readJsonFile<unknown>(timelinePath);
     const timeline = chapterTimelineSchema.parse(timelineRaw);
     return new ChapterRegistry(timeline);
+  }
+
+  private async loadChapterIntroInternal(storylineId: string, chapterId: string): Promise<ChapterIntroPanels | null> {
+    const introPath = path.resolve(chaptersRoot, storylineId, chapterId, "intro/intro-panels.json");
+    if (!existsSync(introPath)) {
+      return null;
+    }
+
+    const introRaw = await readJsonFile<unknown>(introPath);
+    return chapterIntroPanelsSchema.parse(introRaw);
   }
 
   private async loadChapterBundleInternal(storylineId: string, chapterId: string): Promise<ChapterBundle> {

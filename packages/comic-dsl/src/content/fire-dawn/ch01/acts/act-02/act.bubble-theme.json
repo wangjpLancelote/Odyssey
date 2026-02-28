@@ -1,0 +1,51 @@
+{
+  "themeId": "fd-ch01-porch-tense",
+  "tone": "tense",
+  "defaultStyle": {
+    "fill": "#f7f4ff",
+    "stroke": "#272437",
+    "strokeWidth": 2.8,
+    "shadow": 0.34,
+    "cornerBias": 0.62,
+    "tailCurve": 0.5
+  },
+  "styleByBubbleType": {
+    "normal": {
+      "strokeWidth": 2.7
+    },
+    "shout": {
+      "fill": "#fff0d8",
+      "stroke": "#f06b2b",
+      "strokeWidth": 4.8,
+      "shadow": 0.5,
+      "cornerBias": 0.24,
+      "tailCurve": 0.28
+    },
+    "whisper": {
+      "fill": "#ecefff",
+      "stroke": "#7f87cc",
+      "strokeWidth": 2.2,
+      "shadow": 0.22,
+      "cornerBias": 0.88,
+      "tailCurve": 0.86
+    }
+  },
+  "typography": {
+    "fontFamily": "PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif",
+    "fontSize": 16,
+    "lineHeight": 1.32,
+    "letterSpacing": 0.06,
+    "textColor": "#181d36"
+  },
+  "ornaments": {
+    "speedline": { "enabled": true, "intensity": 0.72 },
+    "halftone": { "enabled": true, "intensity": 0.44 },
+    "impactRays": { "enabled": true, "intensity": 0.62 }
+  },
+  "constraints": {
+    "minFontSize": 12,
+    "maxLines": 4,
+    "minBubbleWidth": 160,
+    "maxBubbleWidth": 340
+  }
+}

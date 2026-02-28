@@ -1,0 +1,42 @@
+{
+  "sequenceTemplateId": "fd-ch02-act-01",
+  "panelHints": [
+    {
+      "panelId": "fd-ch02-act01-p1",
+      "index": 0,
+      "sceneId": "fd-ch02-scene-corridor",
+      "title": "灰烬之门",
+      "text": "灰烬在走廊尽头结出第二道门，火光更冷却更亮。",
+      "fxTags": ["halftone", "rumble"],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "上一幕的代价，在这里重新计息。",
+          "bubbleStyle": "normal",
+          "anchor": { "x": 0.14, "y": 0.2 }
+        }
+      ]
+    },
+    {
+      "panelId": "fd-ch02-act01-p2",
+      "index": 1,
+      "sceneId": "fd-ch02-scene-corridor",
+      "title": "冷焰回廊",
+      "text": "每一步都像在火焰与铁锈之间签字。",
+      "fxTags": ["speedline", "ink_outline"],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "不要慢下来。",
+          "bubbleStyle": "whisper",
+          "anchor": { "x": 0.56, "y": 0.66 }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 2,
+    "panelCountMax": 3,
+    "readingOrder": "ltr_ttb"
+  }
+}

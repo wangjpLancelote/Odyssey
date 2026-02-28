@@ -20,33 +20,55 @@ function busFactor(bus: AudioCue["bus"], volumes: AudioBusVolumes): number {
   return volumes.master * volumes.ambient;
 }
 
-export function playAudioCue(cue: AudioCue, volumes: AudioBusVolumes): Howl {
+export function playAudioCue(cue: AudioCue, volumes: AudioBusVolumes): Howl | null {
   const resolvedSrc = resolveAssetUrl({
     id: cue.id,
     kind: "audio",
     assetPath: cue.src
   });
 
-  const sound = new Howl({
-    src: [resolvedSrc],
-    volume: cue.volume * busFactor(cue.bus, volumes)
-  });
-  sound.play();
+  try {
+    const targetVolume = cue.volume * busFactor(cue.bus, volumes);
+    const sound = new Howl({
+      src: [resolvedSrc],
+      volume: targetVolume,
+      onloaderror: () => {
+        console.warn(`[cutscene] audio load failed: ${cue.id} -> ${resolvedSrc}`);
+      },
+      onplayerror: () => {
+        console.warn(`[cutscene] audio play failed: ${cue.id} -> ${resolvedSrc}`);
+      }
+    });
 
-  if (cue.fadeInMs > 0) {
-    sound.volume(0);
-    sound.fade(0, cue.volume * busFactor(cue.bus, volumes), cue.fadeInMs);
+    try {
+      sound.play();
+    } catch {
+      console.warn(`[cutscene] audio play threw: ${cue.id} -> ${resolvedSrc}`);
+      return sound;
+    }
+
+    if (cue.fadeInMs > 0) {
+      sound.volume(0);
+      sound.fade(0, targetVolume, cue.fadeInMs);
+    }
+
+    if (cue.fadeOutMs > 0) {
+      const startFadeOut = Math.max(0, cue.atMs + 400 - cue.fadeOutMs);
+      setTimeout(() => {
+        try {
+          const current = sound.volume();
+          sound.fade(current, 0, cue.fadeOutMs);
+        } catch {
+          // Ignore fade errors so missing assets never block page flow.
+        }
+      }, startFadeOut);
+    }
+
+    return sound;
+  } catch {
+    console.warn(`[cutscene] audio cue skipped: ${cue.id} -> ${resolvedSrc}`);
+    return null;
   }
-
-  if (cue.fadeOutMs > 0) {
-    const startFadeOut = Math.max(0, cue.atMs + 400 - cue.fadeOutMs);
-    setTimeout(() => {
-      const current = sound.volume();
-      sound.fade(current, 0, cue.fadeOutMs);
-    }, startFadeOut);
-  }
-
-  return sound;
 }
 
 export function playCutsceneTimeline(
@@ -75,7 +97,11 @@ export function playCutsceneTimeline(
   for (const cue of spec.audios) {
     timeline.call(() => {
       options?.onTimelineCue?.({ cueId: cue.id, atMs: cue.atMs });
-      playAudioCue(cue, volumes);
+      try {
+        playAudioCue(cue, volumes);
+      } catch {
+        console.warn(`[cutscene] audio timeline step ignored: ${cue.id}`);
+      }
     }, undefined, cue.atMs / 1000);
   }
 

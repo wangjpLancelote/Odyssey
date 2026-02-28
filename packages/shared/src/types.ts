@@ -211,6 +211,226 @@ export const compiledSceneTimelineSchema = z.object({
 });
 export type CompiledSceneTimeline = z.infer<typeof compiledSceneTimelineSchema>;
 
+export const comicStyleVariantSchema = z.enum(["hero_bright"]);
+export type ComicStyleVariant = z.infer<typeof comicStyleVariantSchema>;
+
+export const comicSourceTypeSchema = z.enum(["chapter_intro", "dialogue_node"]);
+export type ComicSourceType = z.infer<typeof comicSourceTypeSchema>;
+
+export const comicPanelLayoutSchema = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  w: z.number().gt(0).max(1),
+  h: z.number().gt(0).max(1)
+});
+export type ComicPanelLayout = z.infer<typeof comicPanelLayoutSchema>;
+
+export const comicCameraShotSchema = z.enum(["wide", "medium", "close", "extreme_close"]);
+export type ComicCameraShot = z.infer<typeof comicCameraShotSchema>;
+
+export const comicCameraAngleSchema = z.enum(["eye", "low", "high"]);
+export type ComicCameraAngle = z.infer<typeof comicCameraAngleSchema>;
+
+export const comicPanelCameraSchema = z.object({
+  shot: comicCameraShotSchema,
+  angle: comicCameraAngleSchema,
+  tiltDeg: z.number().min(-45).max(45).optional()
+});
+export type ComicPanelCamera = z.infer<typeof comicPanelCameraSchema>;
+
+export const comicCaptionSchema = z.object({
+  title: z.string().optional(),
+  text: z.string().optional()
+});
+export type ComicCaption = z.infer<typeof comicCaptionSchema>;
+
+export const comicBubbleStyleSchema = z.enum(["normal", "shout", "whisper"]);
+export type ComicBubbleStyle = z.infer<typeof comicBubbleStyleSchema>;
+
+export const comicAnchorSchema = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1)
+});
+export type ComicAnchor = z.infer<typeof comicAnchorSchema>;
+
+export const comicSpeechSchema = z.object({
+  speaker: z.string(),
+  text: z.string(),
+  bubbleStyle: comicBubbleStyleSchema,
+  anchor: comicAnchorSchema,
+  renderHint: z
+    .object({
+      variant: z.string().optional(),
+      emphasis: z.number().min(0).max(1).optional()
+    })
+    .optional()
+});
+export type ComicSpeech = z.infer<typeof comicSpeechSchema>;
+
+export const comicSfxStyleSchema = z.enum(["impact", "whoosh", "rumble"]);
+export type ComicSfxStyle = z.infer<typeof comicSfxStyleSchema>;
+
+export const comicSfxTextSchema = z.object({
+  text: z.string(),
+  style: comicSfxStyleSchema,
+  anchor: comicAnchorSchema,
+  rotateDeg: z.number().min(-45).max(45).optional()
+});
+export type ComicSfxText = z.infer<typeof comicSfxTextSchema>;
+
+export const comicPanelIllustrationSchema = z.object({
+  source: z.literal("replicate"),
+  prompt: z.string(),
+  imageUrl: z.string().url()
+});
+export type ComicPanelIllustration = z.infer<typeof comicPanelIllustrationSchema>;
+
+export const comicBubbleToneSchema = z.enum(["heroic", "tense", "mystic", "calm"]);
+export type ComicBubbleTone = z.infer<typeof comicBubbleToneSchema>;
+
+export const comicBubbleThemeStyleSchema = z.object({
+  fill: z.string(),
+  stroke: z.string(),
+  strokeWidth: z.number().min(0.5).max(12),
+  shadow: z.number().min(0).max(1),
+  cornerBias: z.number().min(0).max(1),
+  tailCurve: z.number().min(0).max(1)
+});
+export type ComicBubbleThemeStyle = z.infer<typeof comicBubbleThemeStyleSchema>;
+
+export const comicBubbleThemeSchema = z.object({
+  themeId: z.string(),
+  tone: comicBubbleToneSchema,
+  defaultStyle: comicBubbleThemeStyleSchema,
+  styleByBubbleType: z.object({
+    normal: comicBubbleThemeStyleSchema.partial().default({}),
+    shout: comicBubbleThemeStyleSchema.partial().default({}),
+    whisper: comicBubbleThemeStyleSchema.partial().default({})
+  }),
+  typography: z.object({
+    fontFamily: z.string(),
+    fontSize: z.number().min(10).max(36),
+    lineHeight: z.number().min(1).max(2.4),
+    letterSpacing: z.number().min(-1).max(4),
+    textColor: z.string()
+  }),
+  ornaments: z.object({
+    speedline: z.object({
+      enabled: z.boolean(),
+      intensity: z.number().min(0).max(1)
+    }),
+    halftone: z.object({
+      enabled: z.boolean(),
+      intensity: z.number().min(0).max(1)
+    }),
+    impactRays: z.object({
+      enabled: z.boolean(),
+      intensity: z.number().min(0).max(1)
+    })
+  }),
+  constraints: z.object({
+    minFontSize: z.number().min(8).max(24),
+    maxLines: z.number().int().min(1).max(8),
+    minBubbleWidth: z.number().int().min(96).max(720),
+    maxBubbleWidth: z.number().int().min(120).max(1200)
+  })
+});
+export type ComicBubbleTheme = z.infer<typeof comicBubbleThemeSchema>;
+
+export const comicPanelSchema = z.object({
+  panelId: z.string(),
+  index: z.number().int().nonnegative(),
+  layout: comicPanelLayoutSchema,
+  camera: comicPanelCameraSchema,
+  caption: comicCaptionSchema.optional(),
+  speech: z.array(comicSpeechSchema).default([]),
+  sfxTexts: z.array(comicSfxTextSchema).default([]),
+  fxTags: z.array(z.string()).default([]),
+  paletteToken: z.string().optional(),
+  illustration: comicPanelIllustrationSchema.optional()
+});
+export type ComicPanel = z.infer<typeof comicPanelSchema>;
+
+export const comicSequenceMetaSchema = z.object({
+  dslVersion: z.string(),
+  sourceHash: z.string(),
+  compiledAt: z.string(),
+  actId: z.string().optional(),
+  bubbleThemeId: z.string().optional(),
+  bubbleTheme: comicBubbleThemeSchema.optional(),
+  warnings: z.array(z.string()).default([])
+});
+export type ComicSequenceMeta = z.infer<typeof comicSequenceMetaSchema>;
+
+export const compiledComicSequenceSchema = z.object({
+  sequenceId: z.string(),
+  sourceType: comicSourceTypeSchema,
+  storylineId: z.string(),
+  chapterId: z.string(),
+  nodeId: z.string().optional(),
+  style: comicStyleVariantSchema,
+  panels: z.array(comicPanelSchema).min(1),
+  meta: comicSequenceMetaSchema
+});
+export type CompiledComicSequence = z.infer<typeof compiledComicSequenceSchema>;
+
+export const comicStoryboardBeatSchema = z.object({
+  beatId: z.string(),
+  text: z.string(),
+  sceneId: z.string(),
+  mood: z.string().optional(),
+  emphasis: z.number().min(0).max(1).optional()
+});
+export type ComicStoryboardBeat = z.infer<typeof comicStoryboardBeatSchema>;
+
+export const comicReadingOrderSchema = z.enum(["ltr_ttb"]);
+export type ComicReadingOrder = z.infer<typeof comicReadingOrderSchema>;
+
+export const comicStoryboardPlanSchema = z.object({
+  dslVersion: z.literal("1"),
+  sequenceId: z.string(),
+  sourceType: comicSourceTypeSchema,
+  style: comicStyleVariantSchema,
+  beats: z.array(comicStoryboardBeatSchema).min(1),
+  rules: z.object({
+    panelCountMin: z.number().int().positive(),
+    panelCountMax: z.number().int().positive(),
+    readingOrder: comicReadingOrderSchema
+  })
+});
+export type ComicStoryboardPlan = z.infer<typeof comicStoryboardPlanSchema>;
+
+export const comicCompileContextSchema = z.object({
+  dayNight: z.enum(["DAY", "NIGHT"]),
+  branchTag: z.string().optional(),
+  sourceFingerprint: z.string()
+});
+export type ComicCompileContext = z.infer<typeof comicCompileContextSchema>;
+
+export const chapterIntroPanelSchema = z.object({
+  panelId: z.string(),
+  index: z.number().int().nonnegative().optional(),
+  sceneId: z.string().optional(),
+  title: z.string().optional(),
+  text: z.string().optional(),
+  layout: comicPanelLayoutSchema.partial().optional(),
+  camera: comicPanelCameraSchema.partial().optional(),
+  caption: comicCaptionSchema.optional(),
+  speech: z.array(comicSpeechSchema).optional(),
+  sfxTexts: z.array(comicSfxTextSchema).optional(),
+  fxTags: z.array(z.string()).optional(),
+  paletteToken: z.string().optional(),
+  illustration: comicPanelIllustrationSchema.optional()
+});
+export type ChapterIntroPanel = z.infer<typeof chapterIntroPanelSchema>;
+
+export const chapterIntroPanelsSchema = z.object({
+  title: z.string(),
+  style: comicStyleVariantSchema.default("hero_bright"),
+  panels: z.array(chapterIntroPanelSchema).min(1)
+});
+export type ChapterIntroPanels = z.infer<typeof chapterIntroPanelsSchema>;
+
 export const chapterTimelineItemSchema = z.object({
   id: z.string(),
   order: z.number().int().positive(),
@@ -523,6 +743,15 @@ export const chapterTimelineRequestSchema = z.object({
   storylineId: z.string().default("fire-dawn")
 });
 export type ChapterTimelineRequest = z.infer<typeof chapterTimelineRequestSchema>;
+
+export const comicSequenceRequestSchema = z.object({
+  sessionId: z.string(),
+  source: comicSourceTypeSchema,
+  nodeId: z.string().optional(),
+  actId: z.string().optional(),
+  style: comicStyleVariantSchema.default("hero_bright")
+});
+export type ComicSequenceRequest = z.infer<typeof comicSequenceRequestSchema>;
 
 export const sideQuestMachineInputSchema = z.object({
   sessionId: z.string(),

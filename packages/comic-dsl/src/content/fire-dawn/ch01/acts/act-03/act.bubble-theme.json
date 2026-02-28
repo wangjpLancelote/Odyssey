@@ -1,0 +1,51 @@
+{
+  "themeId": "fd-ch01-belltower-mystic",
+  "tone": "mystic",
+  "defaultStyle": {
+    "fill": "#f5f2ff",
+    "stroke": "#2d2952",
+    "strokeWidth": 2.4,
+    "shadow": 0.24,
+    "cornerBias": 0.86,
+    "tailCurve": 0.84
+  },
+  "styleByBubbleType": {
+    "normal": {
+      "strokeWidth": 2.4
+    },
+    "shout": {
+      "fill": "#fff5e2",
+      "stroke": "#de7f3a",
+      "strokeWidth": 4,
+      "shadow": 0.38,
+      "cornerBias": 0.35,
+      "tailCurve": 0.3
+    },
+    "whisper": {
+      "fill": "#eff0ff",
+      "stroke": "#8c8fd8",
+      "strokeWidth": 2,
+      "shadow": 0.18,
+      "cornerBias": 0.95,
+      "tailCurve": 0.92
+    }
+  },
+  "typography": {
+    "fontFamily": "PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif",
+    "fontSize": 14,
+    "lineHeight": 1.38,
+    "letterSpacing": 0.05,
+    "textColor": "#1f2444"
+  },
+  "ornaments": {
+    "speedline": { "enabled": false, "intensity": 0.2 },
+    "halftone": { "enabled": true, "intensity": 0.5 },
+    "impactRays": { "enabled": false, "intensity": 0.14 }
+  },
+  "constraints": {
+    "minFontSize": 11,
+    "maxLines": 5,
+    "minBubbleWidth": 152,
+    "maxBubbleWidth": 330
+  }
+}

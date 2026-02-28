@@ -1,0 +1,6 @@
+const markdown = `# 中段·发电机室
+
+对话与内心宣言并置，气泡应有明显强弱层次。
+`;
+
+export default markdown;

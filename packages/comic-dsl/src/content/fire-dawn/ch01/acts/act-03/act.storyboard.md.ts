@@ -1,0 +1,6 @@
+const markdown = `# 终幕·钟楼余响
+
+章节收束镜头使用高机位和静默留白，给下一章留出回声。
+`;
+
+export default markdown;

@@ -1,0 +1,14 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch01",
+  "actId": "act-02",
+  "title": "第二幕·门廊对峙",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": ["fd-ch01-node-02", "fd-ch01-node-03"]
+    }
+  ],
+  "style": "hero_bright"
+}

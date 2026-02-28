@@ -1,0 +1,51 @@
+{
+  "themeId": "fd-ch02-altar-mystic",
+  "tone": "mystic",
+  "defaultStyle": {
+    "fill": "#f4f2ff",
+    "stroke": "#2c2751",
+    "strokeWidth": 2.3,
+    "shadow": 0.22,
+    "cornerBias": 0.88,
+    "tailCurve": 0.88
+  },
+  "styleByBubbleType": {
+    "normal": {
+      "strokeWidth": 2.3
+    },
+    "shout": {
+      "fill": "#fff4de",
+      "stroke": "#d9803a",
+      "strokeWidth": 3.9,
+      "shadow": 0.36,
+      "cornerBias": 0.34,
+      "tailCurve": 0.32
+    },
+    "whisper": {
+      "fill": "#edf0ff",
+      "stroke": "#878dd8",
+      "strokeWidth": 1.9,
+      "shadow": 0.16,
+      "cornerBias": 0.96,
+      "tailCurve": 0.94
+    }
+  },
+  "typography": {
+    "fontFamily": "PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif",
+    "fontSize": 14,
+    "lineHeight": 1.4,
+    "letterSpacing": 0.05,
+    "textColor": "#1e2246"
+  },
+  "ornaments": {
+    "speedline": { "enabled": false, "intensity": 0.16 },
+    "halftone": { "enabled": true, "intensity": 0.46 },
+    "impactRays": { "enabled": false, "intensity": 0.12 }
+  },
+  "constraints": {
+    "minFontSize": 11,
+    "maxLines": 5,
+    "minBubbleWidth": 150,
+    "maxBubbleWidth": 320
+  }
+}

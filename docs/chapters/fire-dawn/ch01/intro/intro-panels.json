@@ -1,0 +1,31 @@
+{
+  "title": "第一幕：卡塞尔之门",
+  "style": "hero_bright",
+  "panels": [
+    {
+      "panelId": "intro-01",
+      "index": 0,
+      "sceneId": "fd-ch01-scene-street",
+      "title": "世界的门缝",
+      "text": "龙与人的战争从未结束，普通人的清晨，只是混血种战场的薄雾外壳。",
+      "fxTags": ["halftone", "hero_rim_light"],
+      "paletteToken": "hero-day-amber"
+    },
+    {
+      "panelId": "intro-02",
+      "index": 1,
+      "sceneId": "fd-ch01-scene-porch",
+      "title": "规则与代价",
+      "text": "卡塞尔学院教的第一课不是力量，而是代价：每次选择都会留下无法擦除的足迹。",
+      "fxTags": ["halftone", "speedline"]
+    },
+    {
+      "panelId": "intro-03",
+      "index": 2,
+      "sceneId": "fd-ch01-scene-belltower",
+      "title": "你的开场",
+      "text": "从这一幕开始，你不再是旁观者。按下下一格，进入属于你的远征。",
+      "fxTags": ["halftone", "ink_outline"]
+    }
+  ]
+}

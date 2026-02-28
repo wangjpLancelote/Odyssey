@@ -899,6 +899,218 @@ button:disabled { opacity: 0.50; cursor: not-allowed; }
   margin-top: var(--ody-space-md);
 }
 
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: var(--ody-radius);
+  border: 1px solid var(--ody-border-subtle);
+  padding: 10px 12px;
+  font-size: var(--ody-text-sm);
+  line-height: 1.55;
+}
+
+.message-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 14px;
+}
+
+.message-content {
+  min-width: 0;
+}
+
+.message-title {
+  margin-bottom: 2px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.message-body {
+  color: inherit;
+}
+
+.message-info {
+  border-color: rgba(90, 148, 214, 0.4);
+  background: rgba(39, 65, 96, 0.36);
+  color: #d9eaff;
+}
+
+.message-success {
+  border-color: rgba(90, 190, 130, 0.42);
+  background: rgba(30, 66, 42, 0.36);
+  color: #d8fbe4;
+}
+
+.message-warning {
+  border-color: rgba(220, 170, 102, 0.48);
+  background: rgba(96, 67, 29, 0.35);
+  color: #ffe7be;
+}
+
+.message-error {
+  border-color: rgba(223, 90, 90, 0.45);
+  background: rgba(74, 32, 32, 0.35);
+  color: #ffd1d1;
+}
+
+.toast-stack {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 28px));
+  perspective: 1200px;
+}
+
+.toast {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--ody-border-subtle);
+  background:
+    linear-gradient(150deg, rgba(245, 236, 211, 0.1) 0%, transparent 34%),
+    linear-gradient(180deg, rgba(33, 43, 60, 0.98) 0%, rgba(18, 24, 36, 0.97) 70%, rgba(10, 14, 22, 0.97) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 220, 0.22),
+    inset 0 -1px 0 rgba(4, 8, 14, 0.85),
+    0 14px 30px rgba(2, 5, 10, 0.5),
+    0 2px 10px rgba(0, 0, 0, 0.45);
+  padding: 12px 14px;
+  backdrop-filter: blur(10px);
+  transform-origin: top right;
+  animation: toast-rise 220ms var(--ody-ease);
+}
+
+.toast::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, transparent 28%),
+    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 100%);
+  pointer-events: none;
+}
+
+.toast::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  box-shadow: 0 0 10px color-mix(in srgb, currentColor 60%, transparent);
+  opacity: 0.9;
+}
+
+.toast-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toast-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.32), transparent 52%),
+    linear-gradient(180deg, color-mix(in srgb, currentColor 34%, #fff), color-mix(in srgb, currentColor 66%, #111));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.5),
+    0 0 12px color-mix(in srgb, currentColor 30%, transparent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  font-family: var(--ody-font-mono);
+}
+
+.toast-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-family: var(--font-title), "Cinzel", var(--ody-font-serif);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+.toast-close {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fef4db;
+  cursor: pointer;
+  line-height: 1.1;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 0;
+  transition: transform var(--ody-duration) var(--ody-ease), background var(--ody-duration) var(--ody-ease);
+}
+
+.toast-close:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.toast-message {
+  margin-top: 7px;
+  padding-left: 32px;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  color: #f5f8ff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.toast-info {
+  border-color: rgba(104, 171, 246, 0.62);
+  color: #8fd3ff;
+}
+
+.toast-success {
+  border-color: rgba(109, 219, 147, 0.62);
+  color: #86f0bf;
+}
+
+.toast-warning {
+  border-color: rgba(236, 188, 112, 0.64);
+  color: #ffd88f;
+}
+
+.toast-error {
+  border-color: rgba(233, 111, 111, 0.65);
+  color: #ff9a9a;
+}
+
+@keyframes toast-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -10px, -18px) rotateX(10deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotateX(0deg);
+  }
+}
+
 
 /* ═══════════════════════════════════════════════════════════
    SPECIAL SECTIONS
@@ -908,6 +1120,35 @@ button:disabled { opacity: 0.50; cursor: not-allowed; }
   margin-bottom: var(--ody-space-lg);
   border-color: var(--ody-border-ok);
   background: var(--ody-surface-gate);
+}
+
+.name-gate-board-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ody-space-md);
+  margin-top: var(--ody-space-md);
+}
+
+.name-gate-board {
+  border: 1px solid var(--ody-border-subtle);
+  border-radius: var(--ody-radius);
+  background: rgba(13, 19, 27, 0.5);
+  padding: var(--ody-space-md);
+}
+
+.name-gate-board-title {
+  margin: 0;
+  font-size: var(--ody-text-base);
+  color: var(--ody-gold-200);
+  letter-spacing: 0.04em;
+}
+
+.name-gate-rule-list {
+  margin: var(--ody-space-sm) 0 0;
+  padding-left: var(--ody-space-lg);
+  color: var(--ody-text-muted);
+  font-size: var(--ody-text-sm);
+  line-height: 1.6;
 }
 
 .canvas-wrap {
@@ -923,6 +1164,13 @@ button:disabled { opacity: 0.50; cursor: not-allowed; }
   height: 100%;
 }
 
+.canvas-wrap-fullscreen {
+  width: 100%;
+  height: 100vh;
+  border: none;
+  border-radius: 0;
+}
+
 .cutscene-video-overlay {
   position: absolute;
   inset: 0;
@@ -936,4 +1184,244 @@ button:disabled { opacity: 0.50; cursor: not-allowed; }
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.memories-cutscene-page {
+  position: relative;
+  min-height: 100vh;
+  background: #0f1420;
+}
+
+.memories-cutscene-caption {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: var(--ody-radius-pill);
+  border: 1px solid var(--ody-border-strong);
+  background: rgba(11, 15, 24, 0.62);
+  color: var(--ody-gold-100);
+  font-size: var(--ody-text-sm);
+  letter-spacing: 0.06em;
+}
+
+.new-player-prologue {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: var(--ody-space-xl);
+  background:
+    radial-gradient(circle at 50% 16%, rgba(193, 228, 255, 0.14), transparent 56%),
+    rgba(8, 12, 20, 0.84);
+  backdrop-filter: blur(3px);
+}
+
+.new-player-prologue-card {
+  width: min(920px, 100%);
+  border-radius: 14px;
+  border: 1px solid var(--ody-border-strong);
+  background:
+    linear-gradient(180deg, rgba(21, 28, 42, 0.96), rgba(14, 19, 30, 0.95)),
+    radial-gradient(circle at 12% 8%, rgba(220, 196, 146, 0.1), transparent 42%);
+  box-shadow:
+    inset 0 1px 0 rgba(238, 220, 185, 0.18),
+    0 16px 40px rgba(0, 0, 0, 0.45);
+  padding: var(--ody-space-xl);
+}
+
+.new-player-prologue-kicker {
+  color: var(--ody-gold-200);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.new-player-prologue-title {
+  margin: 6px 0 12px;
+  color: var(--ody-gold-100);
+  letter-spacing: 0.04em;
+}
+
+.new-player-prologue-text {
+  margin: 10px 0 0;
+  color: #d9e2f4;
+  line-height: 1.8;
+}
+
+.game-comic-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
+  gap: var(--ody-space-lg);
+  align-items: start;
+}
+
+.game-comic-layout.is-sidebar-collapsed {
+  grid-template-columns: minmax(0, 1fr) 200px;
+}
+
+.comic-main-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 620px;
+  background:
+    radial-gradient(circle at 8% -12%, rgba(252, 208, 110, 0.16), transparent 40%),
+    radial-gradient(circle at 92% 0%, rgba(116, 152, 255, 0.2), transparent 36%),
+    linear-gradient(180deg, rgba(23, 29, 46, 0.96), rgba(13, 17, 28, 0.96));
+}
+
+.comic-main-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.05) 0%, transparent 36%),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.02) 0 10px,
+      rgba(0, 0, 0, 0.02) 10px 20px
+    );
+}
+
+.comic-main-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.comic-stage-konva {
+  position: relative;
+  margin-top: var(--ody-space-md);
+  border-radius: 12px;
+  border: 1px solid rgba(224, 194, 130, 0.38);
+  overflow: hidden;
+  background: #171f37;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 243, 217, 0.17),
+    0 8px 20px rgba(0, 0, 0, 0.34);
+  min-height: 460px;
+}
+
+.comic-stage-konva:focus-visible {
+  outline: 2px solid rgba(116, 213, 255, 0.72);
+  outline-offset: 2px;
+}
+
+.comic-stage-konva canvas {
+  display: block;
+}
+
+.comic-interaction-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: auto;
+}
+
+.comic-interaction-layer.is-disabled {
+  pointer-events: none;
+}
+
+.comic-bubble-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.comic-bubble-node {
+  position: absolute;
+  min-height: 38px;
+  font-weight: 700;
+  padding: 8px 12px;
+  transform-origin: center;
+  transition: transform 180ms ease, filter 180ms ease;
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.comic-bubble-node.is-impact {
+  transform: scale(1.015);
+  filter: saturate(1.2) contrast(1.08) drop-shadow(0 0 8px rgba(255, 148, 52, 0.32));
+}
+
+.comic-bubble-text {
+  font-family: "Bangers", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  white-space: pre-line;
+  overflow: hidden;
+  letter-spacing: 0.01em;
+  text-wrap: pretty;
+}
+
+.comic-intro-shell {
+  background:
+    radial-gradient(circle at 50% -18%, rgba(108, 162, 240, 0.18), transparent 48%),
+    linear-gradient(180deg, rgba(23, 30, 46, 0.96), rgba(13, 19, 31, 0.96));
+}
+
+.comic-intro-shell .comic-stage-konva {
+  min-height: 560px;
+}
+
+.comic-cutscene-overlay {
+  margin-top: var(--ody-space-md);
+  padding-top: var(--ody-space-md);
+  border-top: 1px dashed rgba(212, 182, 127, 0.35);
+}
+
+.game-sidebar {
+  position: sticky;
+  top: 78px;
+  max-height: calc(100vh - 94px);
+  overflow: auto;
+}
+
+.game-sidebar.is-collapsed {
+  min-height: 140px;
+}
+
+@media (max-width: 900px) {
+  .game-comic-layout,
+  .game-comic-layout.is-sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .comic-main-card {
+    min-height: auto;
+  }
+
+  .comic-stage-konva,
+  .comic-intro-shell .comic-stage-konva {
+    min-height: 420px;
+  }
+
+  .game-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .name-gate-board-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .memories-cutscene-caption {
+    width: calc(100% - 24px);
+    text-align: center;
+  }
+
+  .new-player-prologue {
+    padding: var(--ody-space-md);
+  }
+
+  .new-player-prologue-card {
+    padding: var(--ody-space-lg);
+  }
+
+  .toast-stack {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
 }

@@ -1,0 +1,42 @@
+{
+  "sequenceTemplateId": "fd-ch01-act-02",
+  "panelHints": [
+    {
+      "panelId": "fd-ch01-act02-p1",
+      "index": 0,
+      "sceneId": "fd-ch01-scene-porch",
+      "title": "门廊边缘",
+      "text": "抉择悬停在台阶之上，所有沉默都在逼近答案。",
+      "fxTags": ["halftone"],
+      "speech": [
+        {
+          "speaker": "楚子航",
+          "text": "回头还来得及，但答案会追你一生。",
+          "bubbleStyle": "normal",
+          "anchor": { "x": 0.11, "y": 0.16 }
+        }
+      ]
+    },
+    {
+      "panelId": "fd-ch01-act02-p2",
+      "index": 1,
+      "sceneId": "fd-ch01-scene-porch",
+      "title": "不退一步",
+      "text": "恐惧没有退场，只是被决意按在原地。",
+      "fxTags": ["ink_outline", "speedline"],
+      "speech": [
+        {
+          "speaker": "路明非",
+          "text": "我怕，但我更怕一生都不敢看镜子。",
+          "bubbleStyle": "shout",
+          "anchor": { "x": 0.48, "y": 0.32 }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 2,
+    "panelCountMax": 3,
+    "readingOrder": "ltr_ttb"
+  }
+}

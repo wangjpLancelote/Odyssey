@@ -15,5 +15,8 @@
     "build:web": "bun run --cwd apps/web build",
     "check": "bun run --cwd apps/web lint && bun test",
     "test": "bun test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

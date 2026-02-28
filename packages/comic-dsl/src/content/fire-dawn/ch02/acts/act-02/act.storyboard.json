@@ -1,0 +1,42 @@
+{
+  "sequenceTemplateId": "fd-ch02-act-02",
+  "panelHints": [
+    {
+      "panelId": "fd-ch02-act02-p1",
+      "index": 0,
+      "sceneId": "fd-ch02-scene-generator",
+      "title": "回响压力",
+      "text": "机器轰鸣压低呼吸，上一幕的代价仍在发热。",
+      "fxTags": ["rumble", "speedline"],
+      "speech": [
+        {
+          "speaker": "诺诺",
+          "text": "别让上一幕白燃，你得穿过去。",
+          "bubbleStyle": "normal",
+          "anchor": { "x": 0.2, "y": 0.24 }
+        }
+      ]
+    },
+    {
+      "panelId": "fd-ch02-act02-p2",
+      "index": 1,
+      "sceneId": "fd-ch02-scene-generator",
+      "title": "自我判定",
+      "text": "恐惧被命名后，才会真正退后。",
+      "fxTags": ["impact", "ink_outline"],
+      "speech": [
+        {
+          "speaker": "路明非",
+          "text": "我怕，但我不会停在原地。",
+          "bubbleStyle": "shout",
+          "anchor": { "x": 0.54, "y": 0.34 }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 2,
+    "panelCountMax": 3,
+    "readingOrder": "ltr_ttb"
+  }
+}

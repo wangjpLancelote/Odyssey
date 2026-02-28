@@ -1,0 +1,51 @@
+{
+  "themeId": "fd-ch02-corridor-calm",
+  "tone": "calm",
+  "defaultStyle": {
+    "fill": "#f8fbff",
+    "stroke": "#2b364f",
+    "strokeWidth": 2.4,
+    "shadow": 0.2,
+    "cornerBias": 0.78,
+    "tailCurve": 0.68
+  },
+  "styleByBubbleType": {
+    "normal": {
+      "strokeWidth": 2.3
+    },
+    "shout": {
+      "fill": "#fff2dc",
+      "stroke": "#e88d39",
+      "strokeWidth": 4.4,
+      "shadow": 0.4,
+      "cornerBias": 0.3,
+      "tailCurve": 0.34
+    },
+    "whisper": {
+      "fill": "#eef2ff",
+      "stroke": "#8593d8",
+      "strokeWidth": 1.9,
+      "shadow": 0.14,
+      "cornerBias": 0.96,
+      "tailCurve": 0.9
+    }
+  },
+  "typography": {
+    "fontFamily": "PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif",
+    "fontSize": 14,
+    "lineHeight": 1.36,
+    "letterSpacing": 0.04,
+    "textColor": "#1e2940"
+  },
+  "ornaments": {
+    "speedline": { "enabled": false, "intensity": 0.22 },
+    "halftone": { "enabled": true, "intensity": 0.34 },
+    "impactRays": { "enabled": false, "intensity": 0.1 }
+  },
+  "constraints": {
+    "minFontSize": 11,
+    "maxLines": 4,
+    "minBubbleWidth": 150,
+    "maxBubbleWidth": 320
+  }
+}

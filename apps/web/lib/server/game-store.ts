@@ -46,6 +46,15 @@ type StartSessionRow = {
   name_conflict: boolean;
 };
 
+type LegacyStartSessionRow = Omit<StartSessionRow, "storyline_id">;
+
+type SupabaseErrorLike = {
+  code?: string;
+  message?: string;
+  details?: string | null;
+  hint?: string | null;
+};
+
 type AuthorizedSessionRow = {
   session_id: string;
   session_token: string;
@@ -100,24 +109,13 @@ class SupabaseGameStore {
 
     const sanitizedDisplayName = sanitizeDisplayName(displayName);
     const dayNight = detectDayNightBySystemTime();
-
-    const { data, error } = await getSupabaseAdminClient().rpc("ody_start_session", {
-      p_display_name: sanitizedDisplayName,
-      p_storyline_id: storylineId,
-      p_chapter_id: chapterId,
-      p_start_node_id: chapterBundle.meta.startNodeId,
-      p_day_night: dayNight,
-      p_session_ttl_seconds: SESSION_TTL_SECONDS
+    const row = await this.startSessionRpc({
+      displayName: sanitizedDisplayName,
+      storylineId,
+      chapterId,
+      startNodeId: chapterBundle.meta.startNodeId,
+      dayNight
     });
-
-    if (error) {
-      throw new Error("supabase_query_failed");
-    }
-
-    const row = (data as StartSessionRow[] | null)?.[0];
-    if (!row) {
-      throw new Error("session_start_failed");
-    }
 
     if (row.name_conflict || !row.session_id || !row.session_token) {
       throw new NameConflictError(await this.buildNameSuggestions(5));
@@ -766,6 +764,25 @@ class SupabaseGameStore {
     };
   }
 
+  async getComicContext(
+    sessionId: string,
+    sessionToken: string
+  ): Promise<{
+    session: GameSession;
+    node: DialogueNode;
+    dayNight: "DAY" | "NIGHT";
+    branchTag?: string;
+  }> {
+    const runtime = await this.ensureAuthorizedSession(sessionId, sessionToken);
+    const node = await this.resolveSessionNode(runtime);
+    return {
+      session: this.toGameSession(runtime),
+      node,
+      dayNight: runtime.day_night,
+      branchTag: runtime.current_branch_tag ?? undefined
+    };
+  }
+
   async getChapterTimeline(storylineId: string): Promise<ChapterTimeline> {
     return chapterResourceManager.getTimeline(storylineId);
   }
@@ -874,6 +891,295 @@ class SupabaseGameStore {
       occurredAt: new Date().toISOString(),
       ...event
     });
+  }
+
+  private async startSessionRpc(input: {
+    displayName: string;
+    storylineId: string;
+    chapterId: string;
+    startNodeId: string;
+    dayNight: "DAY" | "NIGHT";
+  }): Promise<StartSessionRow> {
+    const client = getSupabaseAdminClient();
+
+    const v2 = await client.rpc("ody_start_session", {
+      p_display_name: input.displayName,
+      p_storyline_id: input.storylineId,
+      p_chapter_id: input.chapterId,
+      p_start_node_id: input.startNodeId,
+      p_day_night: input.dayNight,
+      p_session_ttl_seconds: SESSION_TTL_SECONDS
+    });
+
+    if (!v2.error) {
+      const row = (v2.data as StartSessionRow[] | null)?.[0];
+      if (!row) {
+        throw new Error("session_start_failed");
+      }
+      return row;
+    }
+
+    if (this.isLegacyStartSessionSignature(v2.error)) {
+      const legacy = await client.rpc("ody_start_session", {
+        p_display_name: input.displayName,
+        p_chapter_id: input.chapterId,
+        p_start_node_id: input.startNodeId,
+        p_day_night: input.dayNight,
+        p_session_ttl_seconds: SESSION_TTL_SECONDS
+      });
+
+      if (legacy.error) {
+        await this.handleStartSessionRpcError(legacy.error);
+      }
+
+      const row = (legacy.data as LegacyStartSessionRow[] | null)?.[0];
+      if (!row) {
+        throw new Error("session_start_failed");
+      }
+
+      return {
+        ...row,
+        storyline_id: input.storylineId
+      };
+    }
+
+    if (this.isStartSessionRpcAmbiguousCreatedAt(v2.error)) {
+      return this.startSessionDirect(input);
+    }
+
+    await this.handleStartSessionRpcError(v2.error);
+    throw new Error("supabase_query_failed");
+  }
+
+  private isLegacyStartSessionSignature(error: SupabaseErrorLike): boolean {
+    const payload = `${error.code ?? ""} ${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+    if (payload.includes("p_storyline_id")) return true;
+    if (error.code === "PGRST202" && payload.includes("ody_start_session")) return true;
+    return payload.includes("function") && payload.includes("ody_start_session") && payload.includes("does not exist");
+  }
+
+  private isStartSessionNameConflict(error: SupabaseErrorLike): boolean {
+    const payload = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+    if (error.code === "23505" && payload.includes("normalized_display_name")) return true;
+    return payload.includes("duplicate key") && payload.includes("normalized_display_name");
+  }
+
+  private isStartSessionRpcAmbiguousCreatedAt(error: SupabaseErrorLike): boolean {
+    const payload = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+    return error.code === "42702" && payload.includes("created_at") && payload.includes("ambiguous");
+  }
+
+  private isUndefinedColumn(error: SupabaseErrorLike, columnName: string): boolean {
+    const payload = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+    return (error.code === "42703" || error.code === "PGRST204") && payload.includes(columnName.toLowerCase());
+  }
+
+  private async startSessionDirect(input: {
+    displayName: string;
+    storylineId: string;
+    chapterId: string;
+    startNodeId: string;
+    dayNight: "DAY" | "NIGHT";
+  }): Promise<StartSessionRow> {
+    const client = getSupabaseAdminClient();
+    const nowIso = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
+    const normalized = normalizeDisplayName(input.displayName);
+
+    // Best-effort cleanup so stale locks do not block new sessions.
+    await Promise.allSettled([
+      client.from("ody_name_locks").delete().lte("expires_at", nowIso),
+      client.from("ody_sessions").delete().lte("expires_at", nowIso)
+    ]);
+
+    let playerId = "";
+    let resolvedDisplayName = input.displayName;
+
+    const { data: existingPlayer, error: existingPlayerError } = await client
+      .from("ody_players")
+      .select("id,display_name")
+      .eq("normalized_display_name", normalized)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPlayerError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    if (existingPlayer?.id) {
+      playerId = existingPlayer.id as string;
+      resolvedDisplayName = (existingPlayer.display_name as string | null) ?? input.displayName;
+    } else {
+      const { data: insertedPlayer, error: insertPlayerError } = await client
+        .from("ody_players")
+        .insert({
+          display_name: input.displayName,
+          normalized_display_name: normalized
+        })
+        .select("id,display_name")
+        .single();
+
+      if (insertPlayerError || !insertedPlayer?.id) {
+        throw new Error("supabase_query_failed");
+      }
+
+      playerId = insertedPlayer.id as string;
+      resolvedDisplayName = (insertedPlayer.display_name as string | null) ?? input.displayName;
+    }
+
+    const sessionId = `session-${crypto.randomUUID()}`;
+    const sessionToken = crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
+    let createdAt = nowIso;
+    let updatedAt = nowIso;
+
+    const withStoryline = await client
+      .from("ody_sessions")
+      .insert({
+        id: sessionId,
+        player_id: playerId,
+        session_token: sessionToken,
+        storyline_id: input.storylineId,
+        chapter_id: input.chapterId,
+        current_node_id: input.startNodeId,
+        status: "ACTIVE",
+        day_night: input.dayNight,
+        expires_at: expiresAt
+      })
+      .select("created_at,updated_at")
+      .single();
+
+    if (withStoryline.error) {
+      if (this.isUndefinedColumn(withStoryline.error, "storyline_id")) {
+        const legacy = await client
+          .from("ody_sessions")
+          .insert({
+            id: sessionId,
+            player_id: playerId,
+            session_token: sessionToken,
+            chapter_id: input.chapterId,
+            current_node_id: input.startNodeId,
+            status: "ACTIVE",
+            day_night: input.dayNight,
+            expires_at: expiresAt
+          })
+          .select("created_at,updated_at")
+          .single();
+
+        if (legacy.error) {
+          throw new Error("supabase_query_failed");
+        }
+
+        createdAt = (legacy.data?.created_at as string | null) ?? nowIso;
+        updatedAt = (legacy.data?.updated_at as string | null) ?? nowIso;
+      } else {
+        throw new Error("supabase_query_failed");
+      }
+    } else {
+      createdAt = (withStoryline.data?.created_at as string | null) ?? nowIso;
+      updatedAt = (withStoryline.data?.updated_at as string | null) ?? nowIso;
+    }
+
+    const { error: lockError } = await client.from("ody_name_locks").insert({
+      normalized_display_name: normalized,
+      display_name: resolvedDisplayName,
+      session_id: sessionId,
+      expires_at: expiresAt
+    });
+
+    if (lockError) {
+      await client.from("ody_sessions").delete().eq("id", sessionId);
+      if (this.isStartSessionNameConflict(lockError)) {
+        throw new NameConflictError(await this.buildNameSuggestions(5));
+      }
+      throw new Error("supabase_query_failed");
+    }
+
+    const { error: visitedError } = await client.from("ody_visited_nodes").upsert(
+      {
+        session_id: sessionId,
+        node_id: input.startNodeId
+      },
+      { onConflict: "session_id,node_id" }
+    );
+    if (visitedError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    const checkpointWithStoryline = await client.from("ody_footprint_checkpoints").insert({
+      checkpoint_id: `cp-${sessionId}-1`,
+      session_id: sessionId,
+      storyline_id: input.storylineId,
+      chapter_id: input.chapterId,
+      node_id: input.startNodeId,
+      plot_cursor: 0,
+      metadata: { reason: "chapter_start" }
+    });
+
+    if (checkpointWithStoryline.error) {
+      if (
+        this.isUndefinedColumn(checkpointWithStoryline.error, "storyline_id") ||
+        this.isUndefinedColumn(checkpointWithStoryline.error, "chapter_id")
+      ) {
+        const checkpointLegacy = await client.from("ody_footprint_checkpoints").insert({
+          checkpoint_id: `cp-${sessionId}-1`,
+          session_id: sessionId,
+          node_id: input.startNodeId,
+          plot_cursor: 0,
+          metadata: { reason: "chapter_start" }
+        });
+        if (checkpointLegacy.error) {
+          throw new Error("supabase_query_failed");
+        }
+      } else {
+        throw new Error("supabase_query_failed");
+      }
+    }
+
+    const { error: sidequestError } = await client.from("ody_sidequest_states").upsert(
+      {
+        session_id: sessionId,
+        state: "IDLE",
+        updated_at: nowIso
+      },
+      { onConflict: "session_id" }
+    );
+
+    if (sidequestError) {
+      throw new Error("supabase_query_failed");
+    }
+
+    return {
+      session_id: sessionId,
+      session_token: sessionToken,
+      player_id: playerId,
+      display_name: resolvedDisplayName,
+      storyline_id: input.storylineId,
+      chapter_id: input.chapterId,
+      current_node_id: input.startNodeId,
+      day_night: input.dayNight,
+      status: "ACTIVE",
+      created_at: createdAt,
+      updated_at: updatedAt,
+      name_conflict: false
+    };
+  }
+
+  private async handleStartSessionRpcError(error: SupabaseErrorLike): Promise<never> {
+    if (this.isStartSessionNameConflict(error)) {
+      throw new NameConflictError(await this.buildNameSuggestions(5));
+    }
+
+    if (error.message === "invalid_display_name" || error.message === "chapter_disabled") {
+      throw new Error(error.message);
+    }
+
+    console.error("[odyssey] startSession rpc failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
+    throw new Error("supabase_query_failed");
   }
 }
 

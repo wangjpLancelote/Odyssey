@@ -1,0 +1,51 @@
+{
+  "themeId": "fd-ch01-dawn-heroic",
+  "tone": "heroic",
+  "defaultStyle": {
+    "fill": "#fff9eb",
+    "stroke": "#2e2749",
+    "strokeWidth": 2.6,
+    "shadow": 0.3,
+    "cornerBias": 0.72,
+    "tailCurve": 0.56
+  },
+  "styleByBubbleType": {
+    "normal": {
+      "strokeWidth": 2.4
+    },
+    "shout": {
+      "fill": "#fff3d2",
+      "stroke": "#f08c24",
+      "strokeWidth": 4.2,
+      "shadow": 0.44,
+      "cornerBias": 0.38,
+      "tailCurve": 0.33
+    },
+    "whisper": {
+      "fill": "#f2f4ff",
+      "stroke": "#8b92d9",
+      "strokeWidth": 2,
+      "shadow": 0.18,
+      "cornerBias": 0.9,
+      "tailCurve": 0.8
+    }
+  },
+  "typography": {
+    "fontFamily": "PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif",
+    "fontSize": 15,
+    "lineHeight": 1.35,
+    "letterSpacing": 0.05,
+    "textColor": "#1e2442"
+  },
+  "ornaments": {
+    "speedline": { "enabled": true, "intensity": 0.62 },
+    "halftone": { "enabled": true, "intensity": 0.5 },
+    "impactRays": { "enabled": true, "intensity": 0.36 }
+  },
+  "constraints": {
+    "minFontSize": 12,
+    "maxLines": 4,
+    "minBubbleWidth": 160,
+    "maxBubbleWidth": 320
+  }
+}

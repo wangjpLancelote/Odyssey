@@ -23,17 +23,28 @@ export default async function VersionPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center px-6 py-10">
-      <section className="w-full max-w-[760px] rounded-xl border border-[var(--ody-border)] bg-[var(--ody-surface-card)] p-6 text-center shadow-[var(--ody-shadow-card)]">
-        <div className="flex items-center justify-between gap-3 text-left">
-          <h1 className="m-0 text-3xl tracking-[0.06em] text-[var(--ody-gold-200)]">版本信息</h1>
-          <Link href="/" className="text-[var(--ody-gold-200)] underline underline-offset-4">
+    <main className="entry-page">
+      <section className="entry-shell card">
+        <div className="row">
+          <h1 className="m-0 text-3xl tracking-[0.06em] text-[var(--ody-gold-200)]">纪元档案 👑</h1>
+          <Link href="/" className="menu-inline-link">
             返回首页
           </Link>
         </div>
-        <p className="mt-6 text-sm text-[var(--ody-text-muted)]">当前 Web 应用版本：</p>
-        <div className="mx-auto mt-2 inline-flex rounded-full border border-[var(--ody-border-strong)] bg-[rgba(212,182,127,0.14)] px-5 py-2 text-lg [font-family:var(--ody-font-mono)]">
-          {version}
+
+        <p className="small mt-2">记录你脚下这段旅程所使用的客户端版本与构建来源。</p>
+
+        <div className="mt-5 rounded-xl border border-[var(--ody-border-subtle)] bg-[rgba(15,20,28,0.66)] p-5">
+          <p className="small m-0">当前远征版本</p>
+          <div className="version-pill">{version}</div>
+          <p className="small mt-3">来源：`apps/web/package.json`</p>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="small">想查看版本变更细节？</span>
+          <Link href="/changelog" className="menu-inline-link">
+            前往更新日志
+          </Link>
         </div>
       </section>
     </main>

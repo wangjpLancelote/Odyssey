@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DragonButton } from "@/components/ui-dragon";
+import { NameGate } from "@/components/name-gate";
+import { useToast } from "@/components/toast-provider";
 import { generateRandomDisplayName } from "@/lib/name-generator";
 import { getStoredDisplayName, setStoredDisplayName } from "@/lib/name-storage";
 import { validateDisplayName } from "@/lib/name-utils";
-import { markEntryReady, setStoredSession } from "@/lib/session-storage";
+import { markEntryReady, setEntrySource, setStoredSession } from "@/lib/session-storage";
 
 type SessionPayload = {
   session: {
@@ -25,6 +26,7 @@ const DEFAULT_CHAPTER_ID = "ch01";
 
 export function NewStoryEntry() {
   const router = useRouter();
+  const { toast } = useToast();
 
   const [displayName, setDisplayName] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -64,6 +66,7 @@ export function NewStoryEntry() {
     const validationError = validateDisplayName(displayName);
     if (validationError) {
       setError(validationError);
+      toast({ tone: "warning", title: "命名校验", message: validationError });
       return;
     }
 
@@ -84,10 +87,14 @@ export function NewStoryEntry() {
       const json = (await res.json()) as SessionPayload | { error: string; suggestions?: string[] };
       if (!res.ok) {
         if ("error" in json && json.error === "name_conflict") {
-          setError("这个名字已被另一位冒险者点亮，换一个更闪耀的吧。");
+          const msg = "这个名字已被另一位冒险者点亮，换一个更闪耀的吧。";
+          setError(null);
           setSuggestions(json.suggestions ?? []);
+          toast({ tone: "warning", title: "名字冲突", message: msg, durationMs: 4200 });
         } else {
-          setError("启程受阻，请稍后再试。");
+          const msg = "启程受阻，请稍后再试。";
+          setError(msg);
+          toast({ tone: "error", title: "开局失败", message: msg });
         }
         return;
       }
@@ -102,10 +109,14 @@ export function NewStoryEntry() {
         storylineId: payload.session.storylineId,
         chapterId: payload.session.chapterId
       });
+      setEntrySource("new_story");
       markEntryReady();
+      toast({ tone: "success", title: "启程成功", message: "命运已记住你的名字，正在进入游戏。" });
       router.replace("/game");
     } catch {
-      setError("启程受阻，请稍后再试。");
+      const msg = "启程受阻，请稍后再试。";
+      setError(msg);
+      toast({ tone: "error", title: "网络异常", message: msg });
     } finally {
       setLoading(false);
     }
@@ -113,7 +124,7 @@ export function NewStoryEntry() {
 
   return (
     <main className="entry-page">
-      <section className="entry-shell card">
+      <section className="entry-shell">
         <div className="row">
           <h1 style={{ margin: 0 }}>新的故事</h1>
           <Link href="/" className="menu-inline-link">
@@ -121,68 +132,45 @@ export function NewStoryEntry() {
           </Link>
         </div>
 
-        <p className="small">命名之后，命运才会承认你的存在。</p>
+        <p className="small" style={{ marginTop: "var(--ody-space-sm)" }}>
+          命名之后，命运才会承认你的存在。
+        </p>
 
-        <input
-          className="dragon-input"
-          value={displayName}
-          onChange={(event) => {
-            setDisplayName(event.target.value);
-            setStoredDisplayName(event.target.value);
+        <NameGate
+          showModeTabs={false}
+          displayName={displayName}
+          suggestions={suggestions}
+          error={error}
+          loading={loading}
+          onDisplayNameChange={(value) => {
+            setDisplayName(value);
+            setStoredDisplayName(value);
             setError(null);
           }}
-          placeholder="写下你的冒险名号"
+          onRandomLocal={() => {
+            const name = generateRandomDisplayName();
+            setDisplayName(name);
+            setStoredDisplayName(name);
+            setError(null);
+          }}
+          onRefreshSuggestions={() => {
+            setError(null);
+            void refreshSuggestions();
+          }}
+          onPickSuggestion={(value) => {
+            setDisplayName(value);
+            setStoredDisplayName(value);
+            setError(null);
+          }}
+          onSubmit={() => {
+            void startSession();
+          }}
+          recallName=""
+          recallError={null}
+          recallLoading={false}
+          onRecallNameChange={() => {}}
+          onRecall={() => {}}
         />
-
-        <div className="row" style={{ marginTop: "var(--ody-space-md)" }}>
-          <DragonButton
-            variant="secondary"
-            onClick={() => {
-              const name = generateRandomDisplayName();
-              setDisplayName(name);
-              setStoredDisplayName(name);
-              setError(null);
-            }}
-          >
-            随机召唤
-          </DragonButton>
-          <DragonButton
-            variant="secondary"
-            onClick={() => {
-              setError(null);
-              void refreshSuggestions();
-            }}
-          >
-            再换一批
-          </DragonButton>
-          <DragonButton
-            onClick={() => {
-              void startSession();
-            }}
-            disabled={loading}
-          >
-            {loading ? "启程中..." : "踏入旅程"}
-          </DragonButton>
-        </div>
-
-        {error ? <div className="error-text">{error}</div> : null}
-
-        <div className="choices" style={{ marginTop: "var(--ody-space-md)" }}>
-          {suggestions.map((item) => (
-            <DragonButton
-              key={item}
-              variant="outline"
-              className="choice-btn"
-              onClick={() => {
-                setDisplayName(item);
-                setStoredDisplayName(item);
-                setError(null);
-              }}
-            >
-              {item}
-            </DragonButton>
-          ))}
-        </div>
       </section>
     </main>
   );

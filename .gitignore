@@ -6,3 +6,6 @@ out
 *.log
 coverage
 .prisma
+test-results
+playwright-report
+apps/web/.next-e2e

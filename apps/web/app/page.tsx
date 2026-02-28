@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Message } from "@/components/ui-message";
 
 const MENU_ENTRIES = [
   { href: "/new-story", label: "新的故事", emoji: "⚔️", rune: "骑士试炼" },
   { href: "/memories", label: "旧的回忆", emoji: "🛡️", rune: "封印档案" },
   { href: "/changelog", label: "更新日志", emoji: "📜", rune: "军团战报" },
-  { href: "/version", label: "版本信息", emoji: "👑", rune: "王国纪元" }
+  { href: "/version", label: "版本信息", emoji: "👑", rune: "版本信息" }
 ] as const;
 
 export default async function HomePage({
@@ -34,24 +35,24 @@ export default async function HomePage({
                 Odyssey
               </h1>
               <div className="relative mx-auto mt-3 max-w-[620px]">
-                <p className="text-[#eef3ff] text-base [text-shadow:0_2px_8px_rgba(5,10,20,0.35)] blur-[0.4px]">
+                <p className="blur-[0.4px] text-[#eef3ff] text-base [text-shadow:0_2px_8px_rgba(5,10,20,0.35)]">
                   海风会吹散犹豫，真正的冒险只会向前。
                 </p>
-                <p aria-hidden className="pointer-events-none absolute left-0 right-0 top-full mt-0.5 text-base text-[#eef3ff] opacity-[0.12] blur-[1.5px] [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.5),transparent_80%)] [transform:scaleY(-0.4)]">
+                <p aria-hidden className="top-full right-0 left-0 absolute opacity-[0.12] blur-[1.5px] mt-0.5 text-[#eef3ff] text-base pointer-events-none [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.5),transparent_80%)] [transform:scaleY(-0.4)]">
                   海风会吹散犹豫，真正的冒险只会向前。
                 </p>
               </div>
               {params.reason === "session_required" ? (
-                <p className="bg-[#22395666] mx-auto mt-4 px-4 py-2 border border-[#d9b87866] rounded-xl max-w-[620px] text-[#ffe8bf] text-sm text-left">
-                  你还没有完成命名开局，请先进入"新的故事"或"旧的回忆"。
-                </p>
+                <Message tone="warning" className="mx-auto mt-4 max-w-[620px] text-left">
+                  你还没有完成命名开局，请先进入「新的故事」或「旧的回忆」。
+                </Message>
               ) : null}
             </div>
           </div>
         </div>
 
         {/* Right-side menu, top-aligned with hero */}
-        <aside className="flex flex-col justify-start items-center md:items-end px-4 py-8 md:pr-6 w-full md:w-[min(400px,32vw)] shrink-0 h-full overflow-y-auto">
+        <aside className="flex flex-col justify-start items-center md:items-end px-4 py-8 md:pr-6 w-full md:w-[min(400px,32vw)] h-full overflow-y-auto shrink-0">
         <div className="relative w-full max-w-[380px]">
           <div className="hidden md:block -top-14 left-7 absolute bg-[linear-gradient(180deg,rgba(122,82,48,0.96)_0%,rgba(79,52,30,0.98)_100%)] shadow-[inset_0_1px_0_rgba(252,219,170,0.24),0_6px_16px_rgba(16,10,5,0.42)] border border-[#bc8e5975] rounded-lg w-3 h-16 pointer-events-none" />
           <div className="hidden md:block -top-14 right-7 absolute bg-[linear-gradient(180deg,rgba(122,82,48,0.96)_0%,rgba(79,52,30,0.98)_100%)] shadow-[inset_0_1px_0_rgba(252,219,170,0.24),0_6px_16px_rgba(16,10,5,0.42)] border border-[#bc8e5975] rounded-lg w-3 h-16 pointer-events-none" />

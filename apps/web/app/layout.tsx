@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Cinzel } from "next/font/google";
+import { ToastProvider } from "@/components/toast-provider";
 import "./globals.css";
 
 const cinzel = Cinzel({
@@ -19,7 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN" className={`h-full overflow-hidden ${cinzel.variable}`}>
       <body className="h-full overflow-hidden bg-[var(--ody-surface-body)] text-[var(--ody-text)] antialiased [font-family:var(--ody-font-serif)]">
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

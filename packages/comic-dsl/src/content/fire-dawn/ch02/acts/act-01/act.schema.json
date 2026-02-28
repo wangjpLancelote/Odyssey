@@ -1,0 +1,15 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch02",
+  "actId": "act-01",
+  "title": "第二章开场·灰烬长廊",
+  "sourceBindings": [
+    { "sourceType": "chapter_intro" },
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": ["fd-ch02-node-01"]
+    }
+  ],
+  "style": "hero_bright"
+}

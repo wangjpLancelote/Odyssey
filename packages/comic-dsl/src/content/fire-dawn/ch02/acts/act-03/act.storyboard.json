@@ -1,0 +1,26 @@
+{
+  "sequenceTemplateId": "fd-ch02-act-03",
+  "panelHints": [
+    {
+      "panelId": "fd-ch02-act03-p1",
+      "index": 0,
+      "sceneId": "fd-ch02-scene-altar",
+      "title": "祭台火纹",
+      "text": "祭台裂出细长火纹，第二幕在未尽回响中收束。",
+      "fxTags": ["halftone", "ink_outline"],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "下一幕将从灰烬里抬头。",
+          "bubbleStyle": "whisper",
+          "anchor": { "x": 0.18, "y": 0.56 }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 1,
+    "panelCountMax": 2,
+    "readingOrder": "ltr_ttb"
+  }
+}

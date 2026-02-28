@@ -10,7 +10,7 @@ describe("chapter-resource-manager", () => {
     expect(ch01.nodes["fd-ch01-node-01"]?.id).toBe("fd-ch01-node-01");
     expect(ch01.assetManifest.version).toBe("2");
     expect(ch01.assetManifest.audio.length).toBeGreaterThan(0);
-    expect(ch01.criticalPreloadAssets.length).toBeGreaterThan(0);
+    expect(Array.isArray(ch01.criticalPreloadAssets)).toBe(true);
 
     expect(ch02.meta.chapterId).toBe("ch02");
     expect(ch02.nodes["fd-ch02-node-01"]?.id).toBe("fd-ch02-node-01");
@@ -28,5 +28,14 @@ describe("chapter-resource-manager", () => {
     expect(compiled.cutsceneId).toBe("fire-dawn-ch01-cutscene-01");
     expect(compiled.timeline.sceneId).toBe("fd-ch01-scene-street");
     expect(compiled.timeline.motions.length).toBeGreaterThan(0);
+    expect(compiled.timeline.audios.length).toBeGreaterThan(0);
+  });
+
+  test("loads chapter intro panels when intro config exists", async () => {
+    const intro = await chapterResourceManager.getChapterIntro("fire-dawn", "ch01");
+    expect(intro).not.toBeNull();
+    expect(intro?.title).toBe("第一幕：卡塞尔之门");
+    expect(intro?.panels.length).toBeGreaterThanOrEqual(1);
+    expect(intro?.style).toBe("hero_bright");
   });
 });

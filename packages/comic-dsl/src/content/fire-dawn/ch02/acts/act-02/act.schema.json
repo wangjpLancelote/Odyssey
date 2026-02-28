@@ -1,0 +1,14 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch02",
+  "actId": "act-02",
+  "title": "中段·发电机室",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": ["fd-ch02-node-02", "fd-ch02-node-03"]
+    }
+  ],
+  "style": "hero_bright"
+}

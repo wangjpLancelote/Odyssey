@@ -1,0 +1,58 @@
+{
+  "sequenceTemplateId": "fd-ch01-act-01",
+  "panelHints": [
+    {
+      "panelId": "fd-ch01-act01-p1",
+      "index": 0,
+      "sceneId": "fd-ch01-scene-street",
+      "title": "世界的门缝",
+      "text": "龙与人的战争从未结束，清晨只是薄雾伪装。",
+      "fxTags": ["halftone", "hero_rim_light"],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "每个名字都要在火线中完成认证。",
+          "bubbleStyle": "normal",
+          "anchor": { "x": 0.16, "y": 0.2 }
+        }
+      ]
+    },
+    {
+      "panelId": "fd-ch01-act01-p2",
+      "index": 1,
+      "sceneId": "fd-ch01-scene-porch",
+      "title": "规则与代价",
+      "text": "力量之前先学代价，选择会留下不可擦除的足迹。",
+      "fxTags": ["halftone", "speedline"],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "退一步不会更安全，只会更漫长。",
+          "bubbleStyle": "whisper",
+          "anchor": { "x": 0.14, "y": 0.64 }
+        }
+      ]
+    },
+    {
+      "panelId": "fd-ch01-act01-p3",
+      "index": 2,
+      "sceneId": "fd-ch01-scene-belltower",
+      "title": "你的开场",
+      "text": "钟声炸响，旅程在火光边缘点燃。",
+      "fxTags": ["impact", "speedline", "ink_outline"],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "现在，推开门。",
+          "bubbleStyle": "shout",
+          "anchor": { "x": 0.62, "y": 0.28 }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 3,
+    "panelCountMax": 3,
+    "readingOrder": "ltr_ttb"
+  }
+}

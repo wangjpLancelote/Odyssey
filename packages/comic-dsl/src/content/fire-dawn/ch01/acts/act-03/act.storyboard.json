@@ -1,0 +1,26 @@
+{
+  "sequenceTemplateId": "fd-ch01-act-03",
+  "panelHints": [
+    {
+      "panelId": "fd-ch01-act03-p1",
+      "index": 0,
+      "sceneId": "fd-ch01-scene-belltower",
+      "title": "钟楼断响",
+      "text": "钟声在高处炸裂，第一幕在火纹边缘闭合。",
+      "fxTags": ["rumble", "halftone"],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "落幕不是结束，只是下一幕的引线。",
+          "bubbleStyle": "whisper",
+          "anchor": { "x": 0.2, "y": 0.58 }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 1,
+    "panelCountMax": 2,
+    "readingOrder": "ltr_ttb"
+  }
+}
