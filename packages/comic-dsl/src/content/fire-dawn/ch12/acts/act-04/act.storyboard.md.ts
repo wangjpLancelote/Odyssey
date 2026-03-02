@@ -1,0 +1,5 @@
+const markdown = `# 终章·结局三
+
+1. 旁白：结局C：你选择撤离并守住底线，故事留下开放回响。`;
+
+export default markdown;

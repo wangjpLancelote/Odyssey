@@ -1,0 +1,19 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch11",
+  "actId": "act-01",
+  "title": "第11幕·起笔",
+  "sourceBindings": [
+    {
+      "sourceType": "chapter_intro"
+    },
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch11-node-01"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}

@@ -1,0 +1,32 @@
+{
+  "sequenceTemplateId": "fd-ch12-act-02",
+  "panelHints": [
+    {
+      "panelId": "fd-ch12-a02-p1",
+      "index": 0,
+      "sceneId": "fd-ch12-scene-ending",
+      "title": "旁白 · fd-ch12-node-02",
+      "text": "结局A：你以正面决断结束远征，代价明确且可承受。",
+      "fxTags": [
+        "ink_outline",
+        "speedline"
+      ],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "结局A：你以正面决断结束远征，代价明确且可承受。",
+          "bubbleStyle": "shout",
+          "anchor": {
+            "x": 0.12,
+            "y": 0.14
+          }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 1,
+    "panelCountMax": 1,
+    "readingOrder": "ltr_ttb"
+  }
+}

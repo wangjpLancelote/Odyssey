@@ -26,5 +26,13 @@
     "label": "稳住呼吸，再向前一步",
     "nextNodeId": "fd-ch02-node-04",
     "branchTag": "steady_advance"
+  },
+  {
+    "id": "fd-ch02-choice-05",
+    "nodeId": "fd-ch02-node-04",
+    "label": "进入下一章",
+    "nextNodeId": "fd-ch03-node-01",
+    "nextChapterId": "ch03",
+    "branchTag": "chapter_shift"
   }
 ]

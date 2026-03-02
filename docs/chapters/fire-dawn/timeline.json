@@ -13,9 +13,89 @@
       "id": "ch02",
       "order": 2,
       "prevId": "ch01",
-      "nextId": null,
+      "nextId": "ch03",
       "enabled": true,
       "title": "第二幕 黄金瞳"
+    },
+    {
+      "id": "ch03",
+      "order": 3,
+      "prevId": "ch02",
+      "nextId": "ch04",
+      "enabled": true,
+      "title": "第3幕 分支远征"
+    },
+    {
+      "id": "ch04",
+      "order": 4,
+      "prevId": "ch03",
+      "nextId": "ch05",
+      "enabled": true,
+      "title": "第4幕 分支远征"
+    },
+    {
+      "id": "ch05",
+      "order": 5,
+      "prevId": "ch04",
+      "nextId": "ch06",
+      "enabled": true,
+      "title": "第5幕 分支远征"
+    },
+    {
+      "id": "ch06",
+      "order": 6,
+      "prevId": "ch05",
+      "nextId": "ch07",
+      "enabled": true,
+      "title": "第6幕 分支远征"
+    },
+    {
+      "id": "ch07",
+      "order": 7,
+      "prevId": "ch06",
+      "nextId": "ch08",
+      "enabled": true,
+      "title": "第7幕 分支远征"
+    },
+    {
+      "id": "ch08",
+      "order": 8,
+      "prevId": "ch07",
+      "nextId": "ch09",
+      "enabled": true,
+      "title": "第8幕 分支远征"
+    },
+    {
+      "id": "ch09",
+      "order": 9,
+      "prevId": "ch08",
+      "nextId": "ch10",
+      "enabled": true,
+      "title": "第9幕 分支远征"
+    },
+    {
+      "id": "ch10",
+      "order": 10,
+      "prevId": "ch09",
+      "nextId": "ch11",
+      "enabled": true,
+      "title": "第10幕 分支远征"
+    },
+    {
+      "id": "ch11",
+      "order": 11,
+      "prevId": "ch10",
+      "nextId": "ch12",
+      "enabled": true,
+      "title": "第11幕 分支远征"
+    },
+    {
+      "id": "ch12",
+      "order": 12,
+      "prevId": "ch11",
+      "nextId": null,
+      "enabled": true,
+      "title": "终章 三重终局"
     }
   ]
 }

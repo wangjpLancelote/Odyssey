@@ -1,0 +1,5 @@
+const markdown = `# 终章·决断门槛
+
+1. 旁白：终章抉择时刻。你的最后选择将导向不同结局。`;
+
+export default markdown;

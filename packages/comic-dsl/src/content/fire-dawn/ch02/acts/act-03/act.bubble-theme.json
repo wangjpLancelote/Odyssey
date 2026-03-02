@@ -1,51 +1,62 @@
 {
-  "themeId": "fd-ch02-altar-mystic",
-  "tone": "mystic",
+  "themeId": "ink-ch02-act-03",
+  "tone": "heroic",
   "defaultStyle": {
-    "fill": "#f4f2ff",
-    "stroke": "#2c2751",
-    "strokeWidth": 2.3,
-    "shadow": 0.22,
-    "cornerBias": 0.88,
-    "tailCurve": 0.88
+    "fill": "#f4eee2",
+    "stroke": "#171411",
+    "strokeWidth": 2.7,
+    "shadow": 0.14,
+    "cornerBias": 0.54,
+    "tailCurve": 0.48
   },
   "styleByBubbleType": {
     "normal": {
-      "strokeWidth": 2.3
+      "fill": "#f6f1e7",
+      "strokeWidth": 2.5,
+      "cornerBias": 0.56
     },
     "shout": {
-      "fill": "#fff4de",
-      "stroke": "#d9803a",
-      "strokeWidth": 3.9,
-      "shadow": 0.36,
-      "cornerBias": 0.34,
-      "tailCurve": 0.32
+      "fill": "#f0e4ce",
+      "stroke": "#0f0d0a",
+      "strokeWidth": 4.3,
+      "shadow": 0.24,
+      "cornerBias": 0.3,
+      "tailCurve": 0.24
     },
     "whisper": {
-      "fill": "#edf0ff",
-      "stroke": "#878dd8",
+      "fill": "#f8f4ec",
+      "stroke": "#4f4a43",
       "strokeWidth": 1.9,
-      "shadow": 0.16,
-      "cornerBias": 0.96,
-      "tailCurve": 0.94
+      "shadow": 0.08,
+      "cornerBias": 0.86,
+      "tailCurve": 0.82
     }
   },
   "typography": {
-    "fontFamily": "PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif",
-    "fontSize": 14,
-    "lineHeight": 1.4,
-    "letterSpacing": 0.05,
-    "textColor": "#1e2246"
+    "fontFamily": "Kaiti SC, STKaiti, KaiTi, serif",
+    "fontSize": 16,
+    "lineHeight": 1.42,
+    "letterSpacing": 0.2,
+    "textColor": "#1f1b17"
   },
   "ornaments": {
-    "speedline": { "enabled": false, "intensity": 0.16 },
-    "halftone": { "enabled": true, "intensity": 0.46 },
-    "impactRays": { "enabled": false, "intensity": 0.12 }
+    "speedline": {
+      "enabled": true,
+      "intensity": 0.34
+    },
+    "halftone": {
+      "enabled": false,
+      "intensity": 0
+    },
+    "impactRays": {
+      "enabled": true,
+      "intensity": 0.28
+    }
   },
   "constraints": {
-    "minFontSize": 11,
-    "maxLines": 5,
+    "minFontSize": 12,
+    "maxLines": 4,
     "minBubbleWidth": 150,
-    "maxBubbleWidth": 320
+    "maxBubbleWidth": 360
   }
 }

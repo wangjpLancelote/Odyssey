@@ -1,0 +1,37 @@
+[
+  {
+    "id": "fd-ch03-node-01",
+    "sceneId": "fd-ch03-scene-main",
+    "speaker": "旁白",
+    "content": "第3幕开始。你来到新的交汇点，需要从三个路径中做出选择。",
+    "checkpoint": true
+  },
+  {
+    "id": "fd-ch03-node-02",
+    "sceneId": "fd-ch03-scene-branch",
+    "speaker": "同伴",
+    "content": "你选择了正面推进路线，风险高但信息完整。",
+    "checkpoint": false
+  },
+  {
+    "id": "fd-ch03-node-03",
+    "sceneId": "fd-ch03-scene-branch",
+    "speaker": "主角",
+    "content": "你选择了侧翼迂回路线，节奏更慢但更稳健。",
+    "checkpoint": false
+  },
+  {
+    "id": "fd-ch03-node-04",
+    "sceneId": "fd-ch03-scene-branch",
+    "speaker": "旁白",
+    "content": "你选择了隐藏观察路线，情报增多但时间被拉长。",
+    "checkpoint": false
+  },
+  {
+    "id": "fd-ch03-node-05",
+    "sceneId": "fd-ch03-scene-main",
+    "speaker": "旁白",
+    "content": "本幕收束，你将进入下一幕。",
+    "checkpoint": true
+  }
+]

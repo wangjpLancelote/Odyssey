@@ -1,0 +1,32 @@
+{
+  "sequenceTemplateId": "fd-ch10-act-03",
+  "panelHints": [
+    {
+      "panelId": "fd-ch10-a03-p1",
+      "index": 0,
+      "sceneId": "fd-ch10-scene-main",
+      "title": "旁白 · fd-ch10-node-05",
+      "text": "本幕收束，你将进入下一幕。",
+      "fxTags": [
+        "ink_outline",
+        "speedline"
+      ],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "本幕收束，你将进入下一幕。",
+          "bubbleStyle": "normal",
+          "anchor": {
+            "x": 0.12,
+            "y": 0.14
+          }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 1,
+    "panelCountMax": 1,
+    "readingOrder": "ltr_ttb"
+  }
+}

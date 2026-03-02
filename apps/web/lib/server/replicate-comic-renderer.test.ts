@@ -6,7 +6,8 @@ import {
   buildReplicateIdeogramPrompt,
   extractReplicateImageUrl,
   resolveComicImageProvider,
-  resolveProviderRuntimeConfig
+  resolveProviderRuntimeConfig,
+  runWithRetry
 } from "./replicate-comic-renderer";
 
 function sampleSequence(): CompiledComicSequence {
@@ -44,7 +45,7 @@ describe("replicate comic renderer", () => {
     const panel = sequence.panels[0];
     expect(panel).toBeDefined();
     const prompt = buildReplicateFluxPrompt(sequence, panel!);
-    expect(prompt).toContain("American comic book style");
+    expect(prompt).toContain("ink-wash wuxia");
     expect(prompt).toContain("chapter ch01");
     expect(prompt).toContain("旅程开始了");
   });
@@ -88,5 +89,37 @@ describe("replicate comic renderer", () => {
     if (backup) {
       process.env.REPLICATE_API_TOKEN = backup;
     }
+  });
+
+  test("runWithRetry retries and eventually succeeds", async () => {
+    let attempt = 0;
+    const value = await runWithRetry(
+      async () => {
+        attempt += 1;
+        if (attempt < 2) {
+          throw new Error("transient_failure");
+        }
+        return "ok";
+      },
+      { retries: 2, backoffMs: 1 }
+    );
+
+    expect(value).toBe("ok");
+    expect(attempt).toBe(2);
+  });
+
+  test("runWithRetry throws after retries exhausted", async () => {
+    let attempt = 0;
+    await expect(
+      runWithRetry(
+        async () => {
+          attempt += 1;
+          throw new Error("still_failing");
+        },
+        { retries: 1, backoffMs: 1 }
+      )
+    ).rejects.toThrow("still_failing");
+
+    expect(attempt).toBe(2);
   });
 });

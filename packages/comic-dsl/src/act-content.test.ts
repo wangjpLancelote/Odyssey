@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { comicBubbleThemeSchema } from "@odyssey/shared";
-import { loadComicActBundle, prepareComicStoryboardPlan, resolveComicActId } from "./act-content";
+import { loadChapterActMap, loadComicActBundle, prepareComicStoryboardPlan, resolveComicActId } from "./act-content";
 
 describe("comic act content", () => {
   test("resolves intro and node act ids from chapter map", async () => {
@@ -32,7 +32,7 @@ describe("comic act content", () => {
     });
 
     expect(prepared.actId).toBe("act-02");
-    expect(prepared.bubbleTheme.themeId).toContain("fd-ch01");
+    expect(prepared.bubbleTheme.themeId).toContain("ch01");
     expect(prepared.plan.beats[0]?.text).toContain("门后的答案");
     expect(prepared.plan.rules.readingOrder).toBe("ltr_ttb");
   });
@@ -54,5 +54,27 @@ describe("comic act content", () => {
         }
       })
     ).toThrow();
+  });
+
+  test("covers chapter act maps from ch01 to ch12", async () => {
+    for (let i = 1; i <= 12; i += 1) {
+      const chapterId = `ch${String(i).padStart(2, "0")}`;
+      const map = await loadChapterActMap("fire-dawn", chapterId);
+      expect(map.introActId).toBeTruthy();
+      expect(map.defaultActId).toBeTruthy();
+
+      const actIds = new Set<string>([map.introActId, map.defaultActId, ...Object.values(map.nodeToAct)]);
+      expect(actIds.size).toBeGreaterThan(0);
+
+      for (const actId of actIds) {
+        const bundle = await loadComicActBundle({
+          storylineId: "fire-dawn",
+          chapterId,
+          actId
+        });
+        expect(bundle.schema.chapterId).toBe(chapterId);
+        expect(bundle.storyboard.panelHints.length).toBeGreaterThan(0);
+      }
+    }
   });
 });

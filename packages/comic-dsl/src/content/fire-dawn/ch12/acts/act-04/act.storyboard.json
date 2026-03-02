@@ -1,0 +1,32 @@
+{
+  "sequenceTemplateId": "fd-ch12-act-04",
+  "panelHints": [
+    {
+      "panelId": "fd-ch12-a04-p1",
+      "index": 0,
+      "sceneId": "fd-ch12-scene-ending",
+      "title": "旁白 · fd-ch12-node-04",
+      "text": "结局C：你选择撤离并守住底线，故事留下开放回响。",
+      "fxTags": [
+        "ink_outline",
+        "speedline"
+      ],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "结局C：你选择撤离并守住底线，故事留下开放回响。",
+          "bubbleStyle": "shout",
+          "anchor": {
+            "x": 0.12,
+            "y": 0.14
+          }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 1,
+    "panelCountMax": 1,
+    "readingOrder": "ltr_ttb"
+  }
+}

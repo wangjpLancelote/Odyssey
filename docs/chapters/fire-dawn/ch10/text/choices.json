@@ -1,0 +1,52 @@
+[
+  {
+    "id": "fd-ch10-choice-01",
+    "nodeId": "fd-ch10-node-01",
+    "label": "正面推进",
+    "nextNodeId": "fd-ch10-node-02",
+    "branchTag": "front_push"
+  },
+  {
+    "id": "fd-ch10-choice-02",
+    "nodeId": "fd-ch10-node-01",
+    "label": "侧翼迂回",
+    "nextNodeId": "fd-ch10-node-03",
+    "branchTag": "flank_route"
+  },
+  {
+    "id": "fd-ch10-choice-03",
+    "nodeId": "fd-ch10-node-01",
+    "label": "隐藏观察",
+    "nextNodeId": "fd-ch10-node-04",
+    "branchTag": "stealth_watch"
+  },
+  {
+    "id": "fd-ch10-choice-04",
+    "nodeId": "fd-ch10-node-02",
+    "label": "合流并推进",
+    "nextNodeId": "fd-ch10-node-05",
+    "branchTag": "merge_from_front"
+  },
+  {
+    "id": "fd-ch10-choice-05",
+    "nodeId": "fd-ch10-node-03",
+    "label": "合流并推进",
+    "nextNodeId": "fd-ch10-node-05",
+    "branchTag": "merge_from_flank"
+  },
+  {
+    "id": "fd-ch10-choice-06",
+    "nodeId": "fd-ch10-node-04",
+    "label": "合流并推进",
+    "nextNodeId": "fd-ch10-node-05",
+    "branchTag": "merge_from_stealth"
+  },
+  {
+    "id": "fd-ch10-choice-07",
+    "nodeId": "fd-ch10-node-05",
+    "label": "进入下一幕",
+    "nextNodeId": "fd-ch11-node-01",
+    "nextChapterId": "ch11",
+    "branchTag": "chapter_shift"
+  }
+]

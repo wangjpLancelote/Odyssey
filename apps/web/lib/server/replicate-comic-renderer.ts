@@ -5,6 +5,8 @@ const DEFAULT_REPLICATE_MODEL = "black-forest-labs/flux-schnell";
 const DEFAULT_MAX_GENERATED_PANELS = 2;
 const DEFAULT_PANEL_TIMEOUT_MS = 8_000;
 const DEFAULT_COMIC_IMAGE_PROVIDER = "replicate_flux";
+const DEFAULT_RETRY_COUNT = 1;
+const DEFAULT_RETRY_BACKOFF_MS = 600;
 
 export type ComicImageProvider = "replicate_flux" | "replicate_ideogram";
 
@@ -15,6 +17,11 @@ type ProviderRuntimeConfig = {
 };
 
 type ReplicateModelRef = `${string}/${string}` | `${string}/${string}:${string}`;
+
+type RetryConfig = {
+  retries: number;
+  backoffMs: number;
+};
 
 function appendWarning(sequence: CompiledComicSequence, warning: string): CompiledComicSequence {
   if (sequence.meta.warnings.includes(warning)) {
@@ -51,7 +58,8 @@ export function buildReplicateFluxPrompt(sequence: CompiledComicSequence, panel:
   const camera = `${panel.camera.shot} shot, ${panel.camera.angle} angle`;
   const content = panelPromptText(panel) || "A tense story beat in a fantasy city.";
   return [
-    "American comic book style, bold inks, halftone texture, cinematic composition.",
+    "Chinese ink-wash wuxia panel, rough brushwork, expressive dry-brush streaks, strong negative space.",
+    "High-contrast black ink over warm rice-paper texture, bold composition, cinematic motion.",
     `Storyline ${sequence.storylineId}, chapter ${sequence.chapterId}, panel ${panel.index + 1}.`,
     `Camera: ${camera}.`,
     `Content: ${content}`,
@@ -64,7 +72,8 @@ export function buildReplicateIdeogramPrompt(sequence: CompiledComicSequence, pa
   const content = panelPromptText(panel) || "A tense story beat in a fantasy city.";
   const themeToken = tonePromptToken(sequence);
   return [
-    "American comic page panel art, polished inks, screen tone dots, dynamic perspective.",
+    "Ink-wash wuxia comic panel art, rugged brush texture, calligraphic energy, dramatic blank space.",
+    "Rice-paper grain, dry-brush edges, splash-ink accents, restrained grayscale with subtle warm paper tone.",
     `Visual tone: ${themeToken}.`,
     `Storyline ${sequence.storylineId}, chapter ${sequence.chapterId}, panel ${panel.index + 1}.`,
     `Camera: ${camera}.`,
@@ -152,6 +161,33 @@ async function runWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promis
   ]);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function runWithRetry<T>(fn: () => Promise<T>, config: RetryConfig): Promise<T> {
+  const retries = Math.max(0, config.retries);
+  const backoffMs = Math.max(0, config.backoffMs);
+
+  let lastError: unknown = new Error("replicate_retry_exhausted");
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt === retries) {
+        break;
+      }
+      const delay = backoffMs * (attempt + 1);
+      if (delay > 0) {
+        await sleep(delay);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 export async function attachReplicateIllustrations(sequence: CompiledComicSequence): Promise<CompiledComicSequence> {
   const token = process.env.REPLICATE_API_TOKEN?.trim();
   if (!token) {
@@ -162,8 +198,14 @@ export async function attachReplicateIllustrations(sequence: CompiledComicSequen
   const model = runtime.model;
   const maxPanelsRaw = Number(process.env.REPLICATE_COMIC_MAX_PANELS ?? `${DEFAULT_MAX_GENERATED_PANELS}`);
   const panelTimeoutRaw = Number(process.env.REPLICATE_COMIC_TIMEOUT_MS ?? `${DEFAULT_PANEL_TIMEOUT_MS}`);
+  const retryCountRaw = Number(process.env.REPLICATE_COMIC_RETRIES ?? `${DEFAULT_RETRY_COUNT}`);
+  const retryBackoffRaw = Number(process.env.REPLICATE_COMIC_RETRY_BACKOFF_MS ?? `${DEFAULT_RETRY_BACKOFF_MS}`);
   const maxPanels = Number.isFinite(maxPanelsRaw) ? Math.max(1, Math.min(4, Math.floor(maxPanelsRaw))) : DEFAULT_MAX_GENERATED_PANELS;
   const panelTimeoutMs = Number.isFinite(panelTimeoutRaw) ? Math.max(3_000, Math.floor(panelTimeoutRaw)) : DEFAULT_PANEL_TIMEOUT_MS;
+  const retryConfig: RetryConfig = {
+    retries: Number.isFinite(retryCountRaw) ? Math.max(0, Math.min(3, Math.floor(retryCountRaw))) : DEFAULT_RETRY_COUNT,
+    backoffMs: Number.isFinite(retryBackoffRaw) ? Math.max(0, Math.floor(retryBackoffRaw)) : DEFAULT_RETRY_BACKOFF_MS
+  };
 
   const replicate = new Replicate({
     auth: token,
@@ -178,40 +220,81 @@ export async function attachReplicateIllustrations(sequence: CompiledComicSequen
     nextSequence = appendWarning(nextSequence, warning);
   }
 
-  for (let index = 0; index < nextPanels.length && index < maxPanels; index += 1) {
-    const panel = nextPanels[index];
-    if (!panel) continue;
+  const targetPanels = nextPanels
+    .map((panel, index) => ({ panel, index }))
+    .filter((item): item is { panel: ComicPanel; index: number } => Boolean(item.panel))
+    .slice(0, maxPanels);
 
-    const prompt =
-      runtime.provider === "replicate_ideogram"
-        ? buildReplicateIdeogramPrompt(sequence, panel)
-        : buildReplicateFluxPrompt(sequence, panel);
-    try {
-      const output = await runWithTimeout(
-        replicate.run(model, {
-          input: {
-            prompt
-          }
-        }),
-        panelTimeoutMs
-      );
+  const settled = await Promise.allSettled(
+    targetPanels.map(async ({ panel, index }) => {
+      const prompt =
+        runtime.provider === "replicate_ideogram"
+          ? buildReplicateIdeogramPrompt(sequence, panel)
+          : buildReplicateFluxPrompt(sequence, panel);
+      try {
+        const output = await runWithRetry(
+          () =>
+            runWithTimeout(
+              replicate.run(model, {
+                input: {
+                  prompt
+                }
+              }),
+              panelTimeoutMs
+            ),
+          retryConfig
+        );
 
-      const imageUrl = extractReplicateImageUrl(output);
-      if (!imageUrl) {
-        nextSequence = appendWarning(nextSequence, `replicate_no_output:${panel.panelId}`);
-        continue;
+        const imageUrl = extractReplicateImageUrl(output);
+        if (!imageUrl) {
+          throw new Error(`replicate_no_output:${panel.panelId}`);
+        }
+
+        return { index, panelId: panel.panelId, prompt, imageUrl };
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : "unknown";
+        if (reason === "replicate_timeout") {
+          throw new Error(`replicate_timeout:${panel.panelId}`);
+        }
+        if (reason.startsWith("replicate_no_output:")) {
+          throw error;
+        }
+        throw new Error(`replicate_failed:${panel.panelId}`);
       }
+    })
+  );
 
+  for (const result of settled) {
+    if (result.status === "fulfilled") {
+      const { index, prompt, imageUrl } = result.value;
+      const base = nextPanels[index];
+      if (!base) continue;
       nextPanels[index] = {
-        ...panel,
+        ...base,
         illustration: {
           source: "replicate",
           prompt,
           imageUrl
         }
       };
-    } catch {
-      nextSequence = appendWarning(nextSequence, `replicate_failed:${panel.panelId}`);
+      continue;
+    }
+
+    const message = result.reason instanceof Error ? result.reason.message : "replicate_failed";
+    if (typeof message === "string" && message.startsWith("replicate_no_output:")) {
+      nextSequence = appendWarning(nextSequence, message);
+      continue;
+    }
+
+    const panelIdMatch = /replicate_(?:timeout|failed|no_output):([^:]+)/.exec(message);
+    if (panelIdMatch?.[1]) {
+      if (message.startsWith("replicate_timeout:")) {
+        nextSequence = appendWarning(nextSequence, `replicate_timeout:${panelIdMatch[1]}`);
+      } else {
+        nextSequence = appendWarning(nextSequence, `replicate_failed:${panelIdMatch[1]}`);
+      }
+    } else {
+      nextSequence = appendWarning(nextSequence, "replicate_failed:unknown_panel");
     }
   }
 

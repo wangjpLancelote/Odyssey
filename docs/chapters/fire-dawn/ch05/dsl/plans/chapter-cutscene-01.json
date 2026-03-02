@@ -1,0 +1,13 @@
+{
+  "dslVersion": "1",
+  "sceneId": "fd-ch05-scene-main",
+  "cutsceneId": "fire-dawn-ch05-cutscene-01",
+  "instances": [
+    {
+      "instanceId": "fd-ch05-inst-open",
+      "moduleId": "fd-ch05-m01-open",
+      "offsetMs": 0,
+      "overrides": []
+    }
+  ]
+}

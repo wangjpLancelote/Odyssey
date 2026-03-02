@@ -1,0 +1,32 @@
+{
+  "sequenceTemplateId": "fd-ch10-act-01",
+  "panelHints": [
+    {
+      "panelId": "fd-ch10-a01-p1",
+      "index": 0,
+      "sceneId": "fd-ch10-scene-main",
+      "title": "旁白 · fd-ch10-node-01",
+      "text": "第10幕开始。你来到新的交汇点，需要从三个路径中做出选择。",
+      "fxTags": [
+        "ink_outline",
+        "speedline"
+      ],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "第10幕开始。你来到新的交汇点，需要从三个路径中做出选择。",
+          "bubbleStyle": "normal",
+          "anchor": {
+            "x": 0.12,
+            "y": 0.14
+          }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 1,
+    "panelCountMax": 1,
+    "readingOrder": "ltr_ttb"
+  }
+}

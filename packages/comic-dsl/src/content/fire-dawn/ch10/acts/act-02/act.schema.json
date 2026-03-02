@@ -1,0 +1,18 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch10",
+  "actId": "act-02",
+  "title": "第10幕·中段推进",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch10-node-02",
+        "fd-ch10-node-03",
+        "fd-ch10-node-04"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}

@@ -1,0 +1,16 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch12",
+  "actId": "act-04",
+  "title": "终章·结局三",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch12-node-04"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}

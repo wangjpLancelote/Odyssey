@@ -1,0 +1,15 @@
+{
+  "storylineId": "fire-dawn",
+  "chapterId": "ch10",
+  "slug": "fire-dawn-ch10",
+  "title": "第10幕 分支远征",
+  "startNodeId": "fd-ch10-node-01",
+  "cutscenes": [
+    {
+      "cutsceneId": "fire-dawn-ch10-cutscene-01",
+      "sceneId": "fd-ch10-scene-main",
+      "planFile": "chapter-cutscene-01.json"
+    }
+  ],
+  "scenes": ["fd-ch10-scene-main", "fd-ch10-scene-branch"]
+}

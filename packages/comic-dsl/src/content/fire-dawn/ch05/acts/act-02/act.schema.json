@@ -1,0 +1,18 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch05",
+  "actId": "act-02",
+  "title": "第5幕·中段推进",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch05-node-02",
+        "fd-ch05-node-03",
+        "fd-ch05-node-04"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}

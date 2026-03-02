@@ -4,6 +4,7 @@ import { Message } from "@/components/ui-message";
 const MENU_ENTRIES = [
   { href: "/new-story", label: "新的故事", emoji: "⚔️", rune: "骑士试炼" },
   { href: "/memories", label: "旧的回忆", emoji: "🛡️", rune: "封印档案" },
+  { href: "/comic-demo", label: "分镜Demo", emoji: "🖌️", rune: "水墨试炼" },
   { href: "/changelog", label: "更新日志", emoji: "📜", rune: "军团战报" },
   { href: "/version", label: "版本信息", emoji: "👑", rune: "版本信息" }
 ] as const;
@@ -16,13 +17,13 @@ export default async function HomePage({
   const params = await searchParams;
 
   return (
-    <main className="relative h-screen overflow-hidden">
+    <main className="relative min-h-screen overflow-x-hidden">
       {/* Background layers */}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(122,176,224,0.42)_0%,rgba(101,156,205,0.22)_38%,rgba(57,97,140,0.44)_100%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_6%,rgba(226,241,255,0.6)_0%,rgba(157,199,234,0.22)_36%,transparent_68%)]" />
 
       {/* Main content row: hero left, menu right, top-aligned */}
-      <div className="z-10 relative flex md:flex-row flex-col h-full">
+      <div className="z-10 relative flex md:flex-row flex-col min-h-screen">
         {/* Hero area: centered within the remaining left space */}
         <div className="flex flex-col flex-1 justify-center items-center px-4 h-full overflow-hidden">
           <div className="flex flex-col items-center">

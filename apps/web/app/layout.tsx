@@ -18,9 +18,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="zh-CN" className={`h-full overflow-hidden ${cinzel.variable}`}>
+    <html lang="zh-CN" className={`h-full bg-[var(--ody-surface-body)] ${cinzel.variable}`}>
       <body className="h-full overflow-hidden bg-[var(--ody-surface-body)] text-[var(--ody-text)] antialiased [font-family:var(--ody-font-serif)]">
-        <ToastProvider>{children}</ToastProvider>
+        <div className="h-full overflow-x-hidden overflow-y-auto">
+          <ToastProvider>{children}</ToastProvider>
+        </div>
       </body>
     </html>
   );

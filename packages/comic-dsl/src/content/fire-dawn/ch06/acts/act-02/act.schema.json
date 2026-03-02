@@ -1,0 +1,18 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch06",
+  "actId": "act-02",
+  "title": "第6幕·中段推进",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch06-node-02",
+        "fd-ch06-node-03",
+        "fd-ch06-node-04"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "fd-ch12-choice-01",
+    "nodeId": "fd-ch12-node-01",
+    "label": "直面终局（结局A）",
+    "nextNodeId": "fd-ch12-node-02",
+    "branchTag": "ending_a"
+  },
+  {
+    "id": "fd-ch12-choice-02",
+    "nodeId": "fd-ch12-node-01",
+    "label": "迂回终局（结局B）",
+    "nextNodeId": "fd-ch12-node-03",
+    "branchTag": "ending_b"
+  },
+  {
+    "id": "fd-ch12-choice-03",
+    "nodeId": "fd-ch12-node-01",
+    "label": "撤离终局（结局C）",
+    "nextNodeId": "fd-ch12-node-04",
+    "branchTag": "ending_c"
+  }
+]

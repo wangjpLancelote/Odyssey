@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ChapterTimeline, CompiledComicSequence, CompiledSceneTimeline } from "@odyssey/shared";
+import type { ChapterTimeline, CompiledComicSequence, FootprintMap } from "@odyssey/shared";
 import { DragonButton } from "@/components/ui-dragon";
 import { Message, type MessageTone } from "@/components/ui-message";
 import { useToast } from "@/components/toast-provider";
-import { CutsceneCanvas } from "@/components/cutscene-canvas";
 import { ComicStageKonva } from "@/components/comic-stage-konva";
+import { StoryHotspotStage } from "@/components/story-hotspot-stage";
+import { FootprintDrawer } from "@/components/footprint-drawer";
 import { GameTopbar } from "@/components/game-topbar";
 import {
   clearEntryReady,
@@ -49,17 +50,6 @@ type SessionPayload = {
   };
 };
 
-type FootprintPayload = {
-  sessionId: string;
-  checkpoints: Array<{
-    checkpointId: string;
-    storylineId: string;
-    chapterId: string;
-    nodeId: string;
-    createdAt: string;
-  }>;
-};
-
 type RestorePayload = Omit<SessionPayload, "sessionToken"> & {
   resourceReloadedChapter?: string | null;
 };
@@ -70,14 +60,6 @@ type ChapterAssetsPayload = {
     kind: "audio" | "video" | "image" | "sprite";
     url: string;
   }>;
-  timelineVideoCueMap?: Record<
-    string,
-    {
-      src: string;
-      poster?: string;
-      loop?: boolean;
-    }
-  >;
 };
 
 type GameViewMode = "intro" | "play";
@@ -89,20 +71,20 @@ export function DialogueGame() {
   const [data, setData] = useState<SessionPayload | null>(null);
   const [booting, setBooting] = useState(true);
   const [viewMode, setViewMode] = useState<GameViewMode>("play");
-  const [footprint, setFootprint] = useState<FootprintPayload | null>(null);
+  const [footprint, setFootprint] = useState<FootprintMap | null>(null);
+  const [footprintDrawerOpen, setFootprintDrawerOpen] = useState(false);
+  const [footprintLoading, setFootprintLoading] = useState(false);
+  const [footprintError, setFootprintError] = useState<string | null>(null);
   const [chapterTimeline, setChapterTimeline] = useState<ChapterTimeline | null>(null);
   const [sideQuestInfo, setSideQuestInfo] = useState<string>("尚未唤起支线回响");
-  const [muted, setMuted] = useState(false);
   const [status, setStatus] = useState<{ tone: MessageTone; text: string }>({
     tone: "info",
     text: "旅程连接中..."
   });
-  const [timeline, setTimeline] = useState<CompiledSceneTimeline | null>(null);
-  const [videoCueMap, setVideoCueMap] = useState<Record<string, { src: string; poster?: string; loop?: boolean }>>({});
   const [comicSequence, setComicSequence] = useState<CompiledComicSequence | null>(null);
   const [comicLoading, setComicLoading] = useState(false);
   const [comicError, setComicError] = useState<string | null>(null);
-  const [selectedComicPanelIndex, setSelectedComicPanelIndex] = useState(0);
+  const [comicStageUnavailable, setComicStageUnavailable] = useState(false);
   const [introPanelIndex, setIntroPanelIndex] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const warmedAssetUrlsRef = useRef(new Set<string>());
@@ -124,10 +106,6 @@ export function DialogueGame() {
     },
     [toast]
   );
-
-  const handleCutscenePlayed = useCallback(() => {
-    updateStatus("过场落幕，新的抉择正向你逼近。", "info");
-  }, [updateStatus]);
 
   const dayNightClass = useMemo(() => {
     if (!data) return "未侦测";
@@ -166,6 +144,10 @@ export function DialogueGame() {
     clearStoredSession();
     clearEntryReady();
     clearEntrySource();
+    setFootprint(null);
+    setFootprintDrawerOpen(false);
+    setFootprintLoading(false);
+    setFootprintError(null);
     toast({ tone: "error", title: "会话失效", message: "当前会话已失效，请从首页重新进入。" });
     setData(null);
     setBooting(false);
@@ -213,16 +195,11 @@ export function DialogueGame() {
       const payload: SessionPayload = bootstrap.sessionPayload;
       setData(payload);
       syncStoredSession(payload);
-      setTimeline(bootstrap.cutscene?.timeline ?? null);
-      setVideoCueMap(bootstrap.cutscene?.videoCueMap ?? {});
       setViewMode(resolveIntroGate(payload) ? "intro" : "play");
       updateStatus("旧忆已重连", "info", true);
       setBooting(false);
 
       void loadTimeline(payload.session.storylineId);
-      if (!bootstrap.cutscene?.timeline) {
-        void loadCutscene(payload);
-      }
       return;
     }
 
@@ -252,7 +229,7 @@ export function DialogueGame() {
       syncStoredSession(payload);
       setViewMode(resolveIntroGate(payload) ? "intro" : "play");
       updateStatus("会话已恢复", "success", true);
-      await Promise.all([loadTimeline(payload.session.storylineId), loadCutscene(payload)]);
+      await loadTimeline(payload.session.storylineId);
       setBooting(false);
     } catch {
       handleSessionExpired();
@@ -264,24 +241,6 @@ export function DialogueGame() {
     if (!res.ok) return;
     const json = (await res.json()) as ChapterTimeline;
     setChapterTimeline(json);
-  }
-
-  async function loadCutscene(session: SessionPayload, cutsceneId?: string) {
-    const res = await fetch("/api/cutscene/play", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": session.sessionToken
-      },
-      body: JSON.stringify({
-        sessionId: session.session.id,
-        cutsceneId
-      })
-    });
-
-    if (!res.ok) return;
-    const json = (await res.json()) as { timeline: CompiledSceneTimeline };
-    setTimeline(json.timeline);
   }
 
   const warmAssetUrls = useCallback((assets: ChapterAssetsPayload["criticalPreloadAssets"]) => {
@@ -315,11 +274,35 @@ export function DialogueGame() {
 
       if (!res.ok) return;
       const payload = (await res.json()) as ChapterAssetsPayload;
-      setVideoCueMap(payload.timelineVideoCueMap ?? {});
       warmAssetUrls(payload.criticalPreloadAssets ?? []);
     },
     [warmAssetUrls]
   );
+
+  const warmComicIllustrations = useCallback(async (sequence: CompiledComicSequence) => {
+    if (typeof window === "undefined") return;
+    const urls = [...new Set(sequence.panels.map((panel) => panel.illustration?.imageUrl).filter(Boolean) as string[])];
+    if (!urls.length) return;
+
+    await Promise.allSettled(
+      urls.map(
+        (url) =>
+          new Promise<void>((resolve) => {
+            const image = new Image();
+            const timeout = window.setTimeout(() => resolve(), 1_800);
+            image.onload = () => {
+              window.clearTimeout(timeout);
+              resolve();
+            };
+            image.onerror = () => {
+              window.clearTimeout(timeout);
+              resolve();
+            };
+            image.src = url;
+          })
+      )
+    );
+  }, []);
 
   const loadComicSequence = useCallback(
     async (params: {
@@ -352,23 +335,37 @@ export function DialogueGame() {
 
         const payload = (await res.json()) as CompiledComicSequence;
         setComicSequence(payload);
-        setSelectedComicPanelIndex((current) => {
-          const maxIndex = Math.max(0, payload.panels.length - 1);
-          return Math.min(current, maxIndex);
-        });
+        setComicStageUnavailable(false);
+        void warmComicIllustrations(payload);
       } catch {
         setComicError("分镜加载失败，已启用降级内容。");
       } finally {
         setComicLoading(false);
       }
     },
-    []
+    [warmComicIllustrations]
   );
 
   useEffect(() => {
     if (!data) return;
     void loadChapterAssets(data.session.storylineId, data.session.chapterId, data.sessionToken);
   }, [data, loadChapterAssets]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleUnavailable = () => {
+      setComicStageUnavailable(true);
+    };
+    const handleReady = () => {
+      setComicStageUnavailable(false);
+    };
+    window.addEventListener("odyssey:comic-stage-unavailable", handleUnavailable);
+    window.addEventListener("odyssey:comic-stage-ready", handleReady);
+    return () => {
+      window.removeEventListener("odyssey:comic-stage-unavailable", handleUnavailable);
+      window.removeEventListener("odyssey:comic-stage-ready", handleReady);
+    };
+  }, []);
 
   useEffect(() => {
     if (!data) return;
@@ -381,7 +378,6 @@ export function DialogueGame() {
       });
       return;
     }
-
     void loadComicSequence({
       sessionId: data.session.id,
       sessionToken: data.sessionToken,
@@ -433,23 +429,38 @@ export function DialogueGame() {
       "success",
       true
     );
-    await loadCutscene(next);
   }
 
-  async function loadFootprint() {
+  async function loadFootprint(openDrawer = true) {
     if (!data) return;
-    const res = await fetch(`/api/footprints/map?sessionId=${data.session.id}`, {
-      headers: {
-        "x-session-token": data.sessionToken
-      }
-    });
-
-    if (res.status === 401) {
-      handleSessionExpired();
-      return;
+    if (openDrawer) {
+      setFootprintDrawerOpen(true);
     }
+    setFootprintLoading(true);
+    setFootprintError(null);
+    try {
+      const res = await fetch(`/api/footprints/map?sessionId=${data.session.id}`, {
+        headers: {
+          "x-session-token": data.sessionToken
+        }
+      });
 
-    setFootprint((await res.json()) as FootprintPayload);
+      if (res.status === 401) {
+        handleSessionExpired();
+        return;
+      }
+
+      if (!res.ok) {
+        setFootprintError("足迹读取失败，稍后重试。");
+        return;
+      }
+
+      setFootprint((await res.json()) as FootprintMap);
+    } catch {
+      setFootprintError("足迹读取失败，已自动降级，不影响主流程。");
+    } finally {
+      setFootprintLoading(false);
+    }
   }
 
   async function restore(checkpointId: string) {
@@ -472,7 +483,6 @@ export function DialogueGame() {
 
     if (response.resourceReloadedChapter) {
       updateStatus(`你沿足迹回到 ${checkpointId}，并重返 ${response.resourceReloadedChapter}。`, "success", true);
-      await loadCutscene(next);
       return;
     }
 
@@ -509,7 +519,6 @@ export function DialogueGame() {
     setData(next);
     syncStoredSession(next);
     updateStatus(`你已踏入新幕：${response.session.chapterId}。`, "success", true);
-    await loadCutscene(next);
   }
 
   async function triggerSideQuest() {
@@ -557,7 +566,6 @@ export function DialogueGame() {
     };
     setData(next);
     syncStoredSession(next);
-    await loadCutscene(next);
   }
 
   if (booting || !data) {
@@ -592,7 +600,7 @@ export function DialogueGame() {
 
             {comicError ? <Message tone="warning" className="mt-3">{comicError}</Message> : null}
 
-            <ComicStageKonva sequence={comicSequence} focusPanelIndex={introPanelIndex} />
+            <ComicStageKonva sequence={comicSequence} focusPanelIndex={introPanelIndex} visualMode="monochrome" />
 
             <div className="row" style={{ marginTop: "var(--ody-space-md)" }}>
               <span className="small">点击分镜可重新聚焦当前格。</span>
@@ -612,7 +620,6 @@ export function DialogueGame() {
                       setIntroPanelIndex((value) => value + 1);
                     }
                   }}
-                  disabled={comicLoading}
                 >
                   {isLastIntroPanel ? "完成第一幕，进入旅程" : "下一格"}
                 </DragonButton>
@@ -623,33 +630,30 @@ export function DialogueGame() {
           <div className={`game-comic-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""}`}>
             <section className="card comic-main-card">
               <div className="row">
-                <h2 style={{ margin: 0 }}>美漫分镜主舞台</h2>
+                <h2 style={{ margin: 0 }}>水墨分镜主舞台</h2>
                 <span className="small">{`${data.session.storylineId} / ${data.session.chapterId} / ${data.node.id}`}</span>
               </div>
 
               {comicError ? <Message tone="warning" className="mt-3">{comicError}</Message> : null}
+              {comicStageUnavailable ? (
+                <Message tone="warning" className="mt-3">分镜渲染初始化失败，已自动回退为热点交互模式。</Message>
+              ) : null}
               {comicLoading && !comicSequence ? <p className="small">分镜编排中...</p> : null}
 
-              <ComicStageKonva
-                sequence={comicSequence}
-                onPanelSelect={(index) => {
-                  setSelectedComicPanelIndex(index);
-                }}
-              />
-
-              {timeline ? (
-                <div className="comic-cutscene-overlay">
-                  <div className="small" style={{ marginBottom: "var(--ody-space-sm)" }}>
-                    过场叠层：{timeline.cutsceneId}
-                  </div>
-                  <CutsceneCanvas
-                    spec={timeline}
-                    muted={muted}
-                    videoCueMap={videoCueMap}
-                    onPlayed={handleCutscenePlayed}
-                  />
-                </div>
-              ) : null}
+              {comicSequence && !comicStageUnavailable && !comicError ? (
+                <ComicStageKonva sequence={comicSequence} visualMode="monochrome" />
+              ) : (
+                <StoryHotspotStage
+                  chapterId={data.session.chapterId}
+                  nodeId={data.node.id}
+                  speaker={data.node.speaker}
+                  content={data.node.content}
+                  choices={data.node.choices}
+                  onChoose={(choiceId) => {
+                    void commitChoice(choiceId);
+                  }}
+                />
+              )}
             </section>
 
             <aside className={`card game-sidebar ${sidebarCollapsed ? "is-collapsed" : ""}`}>
@@ -694,20 +698,6 @@ export function DialogueGame() {
                   </div>
 
                   <hr />
-                  <div className="small">当前选中分镜</div>
-                  <div className="small" style={{ marginTop: "var(--ody-space-sm)" }}>
-                    {comicSequence?.panels[selectedComicPanelIndex]
-                      ? `${selectedComicPanelIndex + 1}. ${
-                          comicSequence.panels[selectedComicPanelIndex]?.caption?.title ??
-                          comicSequence.panels[selectedComicPanelIndex]?.panelId
-                        }`
-                      : "暂无分镜"}
-                  </div>
-                  <div className="small" style={{ marginTop: "var(--ody-space-xs)" }}>
-                    {comicSequence?.panels[selectedComicPanelIndex]?.caption?.text ?? "点击左侧分镜可快速定位。"}
-                  </div>
-
-                  <hr />
                   <div className="small">场景节点：{data.node.id}</div>
                   <p>
                     <strong>{data.node.speaker}：</strong>
@@ -735,7 +725,7 @@ export function DialogueGame() {
                     <DragonButton
                       variant="secondary"
                       onClick={() => {
-                        void loadFootprint();
+                        void loadFootprint(true);
                       }}
                     >
                       展开足迹
@@ -763,35 +753,33 @@ export function DialogueGame() {
                   </div>
 
                   <hr />
-                  <div className="small">足迹锚点（仅你可见）</div>
-                  <div className="choices" style={{ marginTop: "var(--ody-space-sm)" }}>
-                    {footprint?.checkpoints?.map((cp) => (
-                      <DragonButton
-                        key={cp.checkpointId}
-                        variant="outline"
-                        onClick={() => {
-                          void restore(cp.checkpointId);
-                        }}
-                      >
-                        {cp.checkpointId} {"->"} {cp.chapterId}:{cp.nodeId}
-                      </DragonButton>
-                    ))}
-                    {!footprint ? <div className="small">尚未读取足迹</div> : null}
+                  <div className="small">足迹概览</div>
+                  <div className="small" style={{ marginTop: "var(--ody-space-sm)" }}>
+                    已记录锚点：{footprint?.checkpoints.length ?? 0}
                   </div>
-
-                  <hr />
-                  <div className="row">
-                    <div className="small">音轨</div>
-                    <DragonButton variant="ghost" onClick={() => setMuted((value) => !value)}>
-                      {muted ? "恢复声息" : "让世界静音"}
-                    </DragonButton>
-                  </div>
+                  {footprintError ? <div className="small">读取状态：{footprintError}</div> : null}
                 </>
               )}
             </aside>
           </div>
         )}
       </div>
+      <FootprintDrawer
+        open={footprintDrawerOpen}
+        loading={footprintLoading}
+        error={footprintError}
+        footprint={footprint}
+        currentChapterId={data.session.chapterId}
+        currentNodeId={data.node.id}
+        onClose={() => setFootprintDrawerOpen(false)}
+        onRefresh={() => {
+          void loadFootprint(false);
+        }}
+        onRestore={(checkpointId) => {
+          setFootprintDrawerOpen(false);
+          void restore(checkpointId);
+        }}
+      />
     </main>
   );
 }

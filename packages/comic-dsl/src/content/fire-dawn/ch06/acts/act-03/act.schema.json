@@ -1,0 +1,16 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch06",
+  "actId": "act-03",
+  "title": "第6幕·收笔转场",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch06-node-05"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}

@@ -1,0 +1,32 @@
+{
+  "sequenceTemplateId": "fd-ch12-act-03",
+  "panelHints": [
+    {
+      "panelId": "fd-ch12-a03-p1",
+      "index": 0,
+      "sceneId": "fd-ch12-scene-ending",
+      "title": "旁白 · fd-ch12-node-03",
+      "text": "结局B：你以迂回策略完成任务，保留了更多余地。",
+      "fxTags": [
+        "ink_outline",
+        "speedline"
+      ],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "结局B：你以迂回策略完成任务，保留了更多余地。",
+          "bubbleStyle": "shout",
+          "anchor": {
+            "x": 0.12,
+            "y": 0.14
+          }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 1,
+    "panelCountMax": 1,
+    "readingOrder": "ltr_ttb"
+  }
+}

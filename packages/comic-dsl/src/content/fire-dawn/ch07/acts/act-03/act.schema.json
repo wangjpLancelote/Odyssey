@@ -1,0 +1,16 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch07",
+  "actId": "act-03",
+  "title": "第7幕·收笔转场",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch07-node-05"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}

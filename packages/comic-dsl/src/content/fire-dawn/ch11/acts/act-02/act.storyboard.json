@@ -1,0 +1,75 @@
+{
+  "sequenceTemplateId": "fd-ch11-act-02",
+  "panelHints": [
+    {
+      "panelId": "fd-ch11-a02-p1",
+      "index": 0,
+      "sceneId": "fd-ch11-scene-branch",
+      "title": "同伴 · fd-ch11-node-02",
+      "text": "你选择了正面推进路线，风险高但信息完整。",
+      "fxTags": [
+        "ink_outline",
+        "speedline"
+      ],
+      "speech": [
+        {
+          "speaker": "同伴",
+          "text": "你选择了正面推进路线，风险高但信息完整。",
+          "bubbleStyle": "normal",
+          "anchor": {
+            "x": 0.12,
+            "y": 0.14
+          }
+        }
+      ]
+    },
+    {
+      "panelId": "fd-ch11-a02-p2",
+      "index": 1,
+      "sceneId": "fd-ch11-scene-branch",
+      "title": "主角 · fd-ch11-node-03",
+      "text": "你选择了侧翼迂回路线，节奏更慢但更稳健。",
+      "fxTags": [
+        "ink_outline"
+      ],
+      "speech": [
+        {
+          "speaker": "主角",
+          "text": "你选择了侧翼迂回路线，节奏更慢但更稳健。",
+          "bubbleStyle": "whisper",
+          "anchor": {
+            "x": 0.3,
+            "y": 0.56
+          }
+        }
+      ]
+    },
+    {
+      "panelId": "fd-ch11-a02-p3",
+      "index": 2,
+      "sceneId": "fd-ch11-scene-branch",
+      "title": "旁白 · fd-ch11-node-04",
+      "text": "你选择了隐藏观察路线，情报增多但时间被拉长。",
+      "fxTags": [
+        "ink_outline",
+        "speedline"
+      ],
+      "speech": [
+        {
+          "speaker": "旁白",
+          "text": "你选择了隐藏观察路线，情报增多但时间被拉长。",
+          "bubbleStyle": "whisper",
+          "anchor": {
+            "x": 0.48,
+            "y": 0.14
+          }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "panelCountMin": 2,
+    "panelCountMax": 3,
+    "readingOrder": "ltr_ttb"
+  }
+}

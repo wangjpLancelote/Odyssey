@@ -1,0 +1,19 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch05",
+  "actId": "act-01",
+  "title": "第5幕·起笔",
+  "sourceBindings": [
+    {
+      "sourceType": "chapter_intro"
+    },
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch05-node-01"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}

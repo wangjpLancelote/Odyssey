@@ -1,0 +1,5 @@
+const markdown = `# 终章·结局二
+
+1. 旁白：结局B：你以迂回策略完成任务，保留了更多余地。`;
+
+export default markdown;

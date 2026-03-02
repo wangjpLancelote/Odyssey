@@ -1,0 +1,30 @@
+[
+  {
+    "id": "fd-ch12-node-01",
+    "sceneId": "fd-ch12-scene-main",
+    "speaker": "旁白",
+    "content": "终章抉择时刻。你的最后选择将导向不同结局。",
+    "checkpoint": true
+  },
+  {
+    "id": "fd-ch12-node-02",
+    "sceneId": "fd-ch12-scene-ending",
+    "speaker": "旁白",
+    "content": "结局A：你以正面决断结束远征，代价明确且可承受。",
+    "checkpoint": true
+  },
+  {
+    "id": "fd-ch12-node-03",
+    "sceneId": "fd-ch12-scene-ending",
+    "speaker": "旁白",
+    "content": "结局B：你以迂回策略完成任务，保留了更多余地。",
+    "checkpoint": true
+  },
+  {
+    "id": "fd-ch12-node-04",
+    "sceneId": "fd-ch12-scene-ending",
+    "speaker": "旁白",
+    "content": "结局C：你选择撤离并守住底线，故事留下开放回响。",
+    "checkpoint": true
+  }
+]

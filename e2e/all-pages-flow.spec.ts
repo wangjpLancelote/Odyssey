@@ -104,6 +104,11 @@ test("traverse all pages and key flows without runtime errors", async ({ page })
     page.waitForResponse((resp) => resp.url().includes("/api/footprints/map")),
     page.getByRole("button", { name: "展开足迹" }).click()
   ]);
+  const footprintDrawerShell = page.locator(".footprint-drawer-shell");
+  const footprintDrawer = page.locator(".footprint-drawer-panel");
+  await expect(footprintDrawer).toBeVisible();
+  await footprintDrawer.getByRole("button", { name: "关闭" }).click();
+  await expect(footprintDrawerShell).not.toHaveClass(/is-open/);
   await Promise.all([
     page.waitForResponse((resp) => resp.url().includes("/api/sidequest/trigger")),
     page.getByRole("button", { name: "唤起支线" }).click()

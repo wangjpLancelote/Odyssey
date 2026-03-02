@@ -1,0 +1,10 @@
+{
+  "introActId": "act-01",
+  "nodeToAct": {
+    "fd-ch12-node-01": "act-01",
+    "fd-ch12-node-02": "act-02",
+    "fd-ch12-node-03": "act-03",
+    "fd-ch12-node-04": "act-04"
+  },
+  "defaultActId": "act-02"
+}

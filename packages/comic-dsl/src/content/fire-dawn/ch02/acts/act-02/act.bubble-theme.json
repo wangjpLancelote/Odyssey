@@ -1,51 +1,62 @@
 {
-  "themeId": "fd-ch02-generator-tense",
+  "themeId": "ink-ch02-act-02",
   "tone": "tense",
   "defaultStyle": {
-    "fill": "#f9f6ff",
-    "stroke": "#24243a",
-    "strokeWidth": 2.9,
-    "shadow": 0.36,
-    "cornerBias": 0.58,
+    "fill": "#f4eee2",
+    "stroke": "#171411",
+    "strokeWidth": 2.7,
+    "shadow": 0.14,
+    "cornerBias": 0.54,
     "tailCurve": 0.48
   },
   "styleByBubbleType": {
     "normal": {
-      "strokeWidth": 2.9
+      "fill": "#f6f1e7",
+      "strokeWidth": 2.5,
+      "cornerBias": 0.56
     },
     "shout": {
-      "fill": "#fff0d7",
-      "stroke": "#f06a2b",
-      "strokeWidth": 5,
-      "shadow": 0.56,
-      "cornerBias": 0.2,
-      "tailCurve": 0.22
+      "fill": "#f0e4ce",
+      "stroke": "#0f0d0a",
+      "strokeWidth": 4.3,
+      "shadow": 0.24,
+      "cornerBias": 0.3,
+      "tailCurve": 0.24
     },
     "whisper": {
-      "fill": "#eef1ff",
-      "stroke": "#7e87cd",
-      "strokeWidth": 2.1,
-      "shadow": 0.2,
-      "cornerBias": 0.9,
-      "tailCurve": 0.9
+      "fill": "#f8f4ec",
+      "stroke": "#4f4a43",
+      "strokeWidth": 1.9,
+      "shadow": 0.08,
+      "cornerBias": 0.86,
+      "tailCurve": 0.82
     }
   },
   "typography": {
-    "fontFamily": "PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif",
+    "fontFamily": "Kaiti SC, STKaiti, KaiTi, serif",
     "fontSize": 16,
-    "lineHeight": 1.3,
-    "letterSpacing": 0.08,
-    "textColor": "#171d34"
+    "lineHeight": 1.42,
+    "letterSpacing": 0.2,
+    "textColor": "#1f1b17"
   },
   "ornaments": {
-    "speedline": { "enabled": true, "intensity": 0.78 },
-    "halftone": { "enabled": true, "intensity": 0.4 },
-    "impactRays": { "enabled": true, "intensity": 0.66 }
+    "speedline": {
+      "enabled": true,
+      "intensity": 0.34
+    },
+    "halftone": {
+      "enabled": false,
+      "intensity": 0
+    },
+    "impactRays": {
+      "enabled": true,
+      "intensity": 0.28
+    }
   },
   "constraints": {
     "minFontSize": 12,
     "maxLines": 4,
-    "minBubbleWidth": 160,
+    "minBubbleWidth": 150,
     "maxBubbleWidth": 360
   }
 }

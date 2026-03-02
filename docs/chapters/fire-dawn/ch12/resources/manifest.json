@@ -1,0 +1,13 @@
+{
+  "version": "2",
+  "baseKey": "fire-dawn/ch12",
+  "audio": [],
+  "video": [],
+  "image": [],
+  "sprite": [],
+  "triggers": {
+    "sceneEnter": [],
+    "nodeEnter": [],
+    "timelineCue": []
+  }
+}

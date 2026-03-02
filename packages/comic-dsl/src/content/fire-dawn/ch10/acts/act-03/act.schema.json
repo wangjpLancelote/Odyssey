@@ -1,0 +1,16 @@
+{
+  "dslVersion": "1",
+  "storylineId": "fire-dawn",
+  "chapterId": "ch10",
+  "actId": "act-03",
+  "title": "第10幕·收笔转场",
+  "sourceBindings": [
+    {
+      "sourceType": "dialogue_node",
+      "nodeIds": [
+        "fd-ch10-node-05"
+      ]
+    }
+  ],
+  "style": "hero_bright"
+}
